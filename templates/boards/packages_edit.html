@@ -1,0 +1,37 @@
+{% extends "boards/base.html" %}
+{% block body %}
+{% load crispy_forms_tags %}
+<form action="" method="post">
+{% csrf_token %}
+<div class="container">
+<div class ="row">
+    <div class="col-6">
+        {{PackageForm.index|as_crispy_field}}
+        {{PackageForm.delivery_date|as_crispy_field}} 
+        {{PackageForm.supplier|as_crispy_field}}
+        
+
+        
+     
+   
+    </div>
+    <div class="col-6">
+        {{PackageForm.wz|as_crispy_field}}
+        {{PackageForm.length|as_crispy_field}}
+        
+        
+      
+      
+    </div>
+    <div class="col-6">
+    </div>
+    <input type="submit" class="btn btn-primary"></form>
+
+</div>
+</div>
+
+
+</form>>
+{{info}}
+{% endblock body %}
+

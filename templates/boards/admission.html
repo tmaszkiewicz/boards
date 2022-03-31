@@ -1,0 +1,33 @@
+{% extends "boards/base.html" %}
+{% block body %}
+{% load crispy_forms_tags %}
+PRZYJECIE!
+</form><form action="" method="post">
+        
+{% csrf_token %}
+<div class="container">
+<div class ="row">
+    <div class="col-6">
+        {{IndexForm.sap|as_crispy_field}}
+        {{IndexForm.delivery_date|as_crispy_field}}
+   
+    </div>
+    <div class="col-6">
+        {{IndexForm.name|as_crispy_field}}
+        {{IndexForm.supplier|as_crispy_field}}
+     <!--
+        {{IndexForm.country|as_crispy_field}}
+        {{IndexForm.werk|as_crispy_field}}
+        -->
+    </div>
+    <div class="col-6">
+    </div>
+
+</div>
+</div>
+
+
+<input type="submit"></form>
+</form>>
+{% endblock body %}
+

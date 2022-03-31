@@ -1,0 +1,61 @@
+{% extends "boards/base.html" %}
+{% block body %}
+
+<div class="container">
+    <form method="POST" action="">
+        {% csrf_token %}
+        <label for="sap">SAP</label>
+        <input type="text" name="sap" id="sap"></input>
+        <input type="submit"></input>
+    </form>
+
+    <table id="rep" class="table table-striped table-dark">
+        <thead>  
+            <tr>
+                <th scope="col" class="col-3">Index</th>
+                <th scope="col" class="col-3">Dostawca</th>
+                <th scope="col" class="col-3">Data przyjęcia</th>
+                <th scope="col" class="col-2">Lokalizacja</th>
+                <th scope="col" class="col-1">Długość</th>
+ 
+            </tr>
+        </thead>
+
+    <tbody>
+    {% for reportrow in reportrows %}
+    {% if reportrow.0 == "I" %}
+    <tr>
+    {%else%}
+    <tr style="display:none;">
+    {%endif%}
+        <td class="col-3" align="left">
+                {{reportrow.1}}
+        </td>
+        <td class="col-3" align="left">
+            {{reportrow.2}}
+        </td>
+        <td class="col-3" align="left">
+            {{reportrow.3|date:"d-m-Y" }}
+        </td>
+        <td class="col-2" align="left">
+            {{reportrow.4}}
+        </td>
+        <td class="col-1" align="left">
+            {{reportrow.5}}
+        </td>
+    
+    </tr>
+    
+    </div>
+
+
+    {% endfor %}
+    </tbody>
+</div>
+<script>
+    console.log(document.getElementById("rep");
+    
+    //alert(document.getElementById("rep").tbody.trow[1].text;       
+
+</script>
+{% endblock body %}

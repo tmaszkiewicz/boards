@@ -1,0 +1,111 @@
+{% extends "boards/base.html" %}
+{% block body %}
+
+
+<div class="container">
+    <table class="table table-striped table-dark">
+        <thead>  
+            <tr>
+                <th scope="col" class="col-11">Index</th>
+                <!--https://icons.getbootstrap.com/#install -->
+                <h1>
+                <th scope="col" class="col-2" ><a href="/boards/indexes_add/"><i style="font-size: 2rem;" class="bi bi-journal-plus"></i> </a>
+                </th>
+                </h1>
+
+                </th>
+            </tr>
+        </thead>
+
+    <tbody>
+    {% for index in indexes %}
+    <tr>
+        <td class="col-10" align="left">
+            {{index.name}}
+        </td>
+        
+        <td class="col-1" align="center">
+           <button id="myBtn{{index.pk}}">Edytuj</button>
+         </td>
+            <!--
+                usuwanie
+        <td class="col-1" align="center"> 
+                
+        </td>
+            -->
+        </tr>
+    <script>
+        // Get the modal
+        var modal{{index.pk}} = document.getElementById("myModal{{index.pk}}");
+        // Get the button that opens the modal
+        var btn{{index.pk}} = document.getElementById("myBtn{{index.pk}}");
+        // When the user clicks the button, open the modal 
+        btn{{index.pk}}.onclick = function() {
+            //alert("asdsd{{index.pk}}");
+            document.getElementById("myModal{{index.pk}}").style.display = "block";
+        
+        }
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+            if (event.target == document.getElementById("myModal{{index.pk}}")) {
+                document.getElementById("myModal{{index.pk}}").style.display = "none";
+            }
+        }
+    // Get the <span> element that closes the modal
+        //Brzydko...........
+        for (var j = 0; j < 1000; j++) {
+            var span = document.getElementsByClassName("close")[j];
+        span.onclick = function() {
+            var els = document.getElementsByClassName("modal");
+            
+            for(var i = 0; i < 1000; i++){
+                
+                document.getElementsByClassName("modal")[i].style.display = "none";
+           }
+        }
+        }
+        
+ 
+
+    </script>
+    <div id="myModal{{index.pk}}" class="modal" tabindex="-1">
+
+    <!-- Modal content -->
+    <div class="modal-dialog">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="close">&times;</span>
+        </div>
+        
+        <div class="modal-body">
+        <form method="POST" action="">
+            {% csrf_token %}
+            <center>
+            <input type="hidden" name="index" id="index" value="{{index.pk}}"></input>
+            <input type="text" name="sap" id="sap" value="{{index.sap}}"></input><br><br>
+            <input type="text" name="name" id="name" value="{{index.name}}"></input><br><br>
+            <!--
+            <input type="text`" name="default_length" id="default_length" value="{{index.default_length}}"></input>
+            -->
+            <input type="submit" value="ZAPISZ"></input>
+            </center>
+        </div>
+        <div class="modal-footer">
+        </div>
+                
+        </form>
+            
+        </div>
+
+
+    </div>
+    </div>
+    
+    </div>
+
+
+    {% endfor %}
+    </tbody>
+</div>
+
+{% endblock body %}

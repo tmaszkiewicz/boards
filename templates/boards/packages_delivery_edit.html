@@ -1,0 +1,82 @@
+{% extends "boards/base.html" %}
+{% block body %}
+
+<div class="container">
+    <h1 align="center">DOSTAWA</h1>
+
+    <form method="POST" action="">
+        {% csrf_token %}
+        <label for="wz">WZ</label>
+        <input type="text" list="wzlist" name="wz" id="wz"></input>
+            <datalist id="wzlist">
+                {%for w in wz%}
+                {%if w.wz != None %}
+                <option>{{w.wz}}</option>
+                {%endif%}
+                {%endfor%}
+            </datalist>
+        <input type="submit"></input>
+    </form>
+
+
+
+    <table class="table table-striped table-dark">
+        <thead>  
+            <tr>
+                <th scope="col" class="col-2">SAP</th>
+                <th scope="col" class="col-2">INDEX</th>
+                <th scope="col" class="col-2">DOSTAWCA</th>
+                <th scope="col" class="col-2">LOKALIZACJA</th>
+                <th scope="col" class="col-2">DLUGOŚĆ</th>
+                <th scope="col" class="col-2">WZ DOSTAWCY</th>
+
+
+
+                <th scope="col" class="col-1" align="center">Edytuj</th>
+                <th scope="col" class="col-1" align="center">Usuń</th>
+            </tr>
+        </thead>
+
+    <tbody>
+    {% for package in packages %}
+    <tr>
+        <td class="col-2" align="left">
+            {{package.index.sap}} 
+        </td>
+        <td class="col-2" align="left">
+            {{package.index.name}} 
+        </td>
+        <td class="col-2" align="left">
+            {{package.supplier}}
+        </td>
+        <td class="col-2" align="left">
+            {{package.localisation}}
+        </td>
+        <td class="col-2" align="left">
+            {{package.length}} m
+        </td>
+        <td class="col-2" align="left">
+            {{package.wz}}
+        </td>
+        
+        <td class="col-1" align="center">
+            <a href="/boards/packages_edit/{{package.pk}}">Edutuj</a>
+        </td>
+        <td class="col-1" align="center"> 
+            <a href="/boards/packages_del/{{package.pk}}">X</a>
+        </td>
+    </tr>
+ 
+    {% endfor %}
+    </tbody>
+</div>
+
+  
+
+<script>
+
+    
+ 
+</script>
+    
+{% endblock body %}
