@@ -20,9 +20,10 @@
 
 
 
-    <table class="table table-striped table-dark">
+    <table id="table_delivery" class="table table-striped table-dark">
         <thead>  
             <tr>
+                <th scope="col" class="col-2">PACZKA</th>
                 <th scope="col" class="col-2">SAP</th>
                 <th scope="col" class="col-2">INDEX</th>
                 <th scope="col" class="col-2">DOSTAWCA</th>
@@ -41,7 +42,11 @@
     {% for package in packages %}
     <tr>
         <td class="col-2" align="left">
-            {{package.index.sap}} 
+
+            {{package.pk}}
+        </td>
+        <td class="col-2" align="left">
+            {{package.index.sap}}
         </td>
         <td class="col-2" align="left">
             {{package.index.name}} 
@@ -68,10 +73,20 @@
     </tr>
  
     {% endfor %}
+
+    <tr>
+        <td class="col-2" colspan="9" align="center">
+            
+            <button type="button" class="btn btn-primary btn-lg" onclick="drukuj('table_delivery')">DRUKUJ</button>
+
+        </td>
+    </tr>
     </tbody>
+
+
+
 </div>
 
-  
 
 <script>
 

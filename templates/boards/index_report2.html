@@ -1,5 +1,4 @@
 {% extends "boards/base.html" %}
-<script type="text/javascript">
     
     
 {% block body %}
@@ -15,10 +14,10 @@
     <table id="rep" class="table table-striped table-dark">
         <thead>  
             <tr>
-                <th scope="col" class="col-3">INDEX</th>
-                <th scope="col" class="col-3">SAP</th>
-                <th scope="col" class="col-2">ŁĄCZNIE MAG</th>
-                <th scope="col" class="col-2">ŁĄCZNIE PRD</th>
+                <th scope="col" class="col-3">INDEX<br>PACZKA</th>
+                <th scope="col" class="col-3">SAP<br>DOSTAWCA</th>
+                <th scope="col" class="col-2">ŁĄCZNIE MAG<BR>DOSTAWA</th>
+                <th scope="col" class="col-2">ŁĄCZNIE PRD<BR>LOKALIZACJA </th>
                 <th scope="col" class="col-2">ŁĄCZNIE</th>
  
             </tr>
@@ -27,13 +26,12 @@
     <tbody>
     {% for reportrow in reportrows %}
     {% if reportrow.0 == "I" %}
-    {{reportrow.6}}
-    <tr id="{{reportrow.6}}" onclick="expand('rep','{{reportrow.6}}')">
+    <tr id="{{reportrow.6}}" onclick="expand('rep','{{reportrow.6}}')"" style="background-color: rgb(30, 30, 30);">
     {%else%}
-    <tr style="display:none;">
+    <tr style="display:none;background-color: rgb(60, 60, 60); ">
     {%endif%}
         <td class="col-3" align="left">
-                {{reportrow.1}}
+            {{reportrow.1}}
         </td>
         <td class="col-3" align="left">
             {{reportrow.2}}
@@ -47,13 +45,15 @@
         <td class="col-2" align="left">
             {{reportrow.5}}
         </td>
-        <td class="col-2" align="left">
+        <td class="col-2" style="display:none;" align="left">
             {{reportrow.6}}
         </td>
-        <td class="col-2" style="display:none;" align="left">
+        <td class="col-2" style="display:none;" align="left"> 
             {{reportrow.7}}
         </td>
-
+        <td class="col-2" style="display:none;" align="left">
+            {{reportrow.0}}
+        </td>
         
     </tr>
     

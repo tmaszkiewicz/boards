@@ -7,9 +7,11 @@ from urllib import request
 from urllib.error import HTTPError
 from venv import create
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
 from  datetime import date
+from django.db.models import Sum
+
 from rest_framework import viewsets
 from .models import IndexForm, Index, Supplier, PackageForm, Package
 from .models import PackageTrash, IndexForm, SupplierForm, CurrentUser
@@ -94,7 +96,7 @@ def suppliers(request, *args, **kwargs):
 
 def packages(request, *args, **kwargs):
     url = 'boards/packages.html'
-    sorts = ('sap','index','supplier','localisation','length')
+    sorts = ('pk','sap','index','supplier','localisation','length')
     context = {
     }
     if request.method == 'POST':
@@ -102,14 +104,15 @@ def packages(request, *args, **kwargs):
         context['actual_sort'] = request.POST['sort']
 
     else:
-        packages = Package.objects.all().order_by('index__sap')
-        context['actual_sort'] = 'sap'
+        packages = Package.objects.all().order_by('-pk')
+        context['actual_sort'] = 'pk'
     
     context['sorts']=sorts
     context['packages']=packages
     return render(request, url, context)
 def packages_delivery_edit(request, *args, **kwargs):
     url = 'boards/packages_delivery_edit.html'
+
     
     if request.method == 'POST':
         packages = Package.objects.filter(wz=request.POST['wz']) if request.POST['wz']!="" else Package.objects.all()
@@ -121,6 +124,8 @@ def packages_delivery_edit(request, *args, **kwargs):
         else:
             packages = Package.objects.filter(delivery_date=package_last.delivery_date)
 
+
+
     context = {
     }
     #Print labels once again....
@@ -129,6 +134,7 @@ def packages_delivery_edit(request, *args, **kwargs):
 
     context['wz'] = Package.objects.order_by('wz').values('wz').distinct()
     context['packages']=packages
+
     return render(request, url, context)
 
 def packages_edit(request, *args, **kwargs):
@@ -231,7 +237,6 @@ def indexes_add(request, *args, **kwargs):
         
 
 def index_report2(request,*args,**kwargs):
-    from django.db.models import Sum
     url = 'boards/index_report2.html'
     context = {        
     }
@@ -272,15 +277,22 @@ def index_report2(request,*args,**kwargs):
                 n = ""
 
             row_nr += 1
-            reportline = ["P","",n,package.delivery_date,package.localisation,package.length,"tr"+str(ind_nr), row_nr]
+            #reportline = ["P","",n,package.delivery_date,package.localisation,package.length,"tr"+str(ind_nr), row_nr]
+            barcode = ""
+            for i in range(12-len(str(package.pk))):
+                barcode = barcode+"0"
+            barcode = barcode+str(package.pk)
+
+            reportline = ["P",barcode,n,package.delivery_date,package.localisation,package.length,"tr"+str(ind_nr), row_nr]
+
             reportrows.append(reportline)
         
     context['indexes'] = indexes
     context['packages'] = packages
     context['reportrows'] = reportrows
     return render(request, url, context)
+
 def index_report(request,*args,**kwargs):
-    from django.db.models import Sum
     url = 'boards/index_report.html'
     context = {        
     }
@@ -319,6 +331,53 @@ def index_report(request,*args,**kwargs):
     context['reportrows'] = reportrows
     return render(request, url, context)
 
+def suppliers_report(request, *args, **kwargs):
+
+    url = 'boards/suppliers_report.html'
+    reportrows = []
+    suppliers = Supplier.objects.all() # DODAJ FILTER
+    for supplier in suppliers:
+        sum_MAG = Package.objects.filter(localisation="MAG",supplier=supplier).aggregate(Sum('length'))
+        sum_PRD = Package.objects.filter(localisation="PRD",supplier=supplier).aggregate(Sum('length'))
+        sum_ALL = Package.objects.filter(supplier=supplier).exclude(localisation="CLOSED").aggregate(Sum('length'))
+        sum_MAG_ = sum_MAG['length__sum'] if sum_MAG['length__sum']!=None else ""
+        sum_PRD_ = sum_PRD['length__sum'] if sum_PRD['length__sum']!=None else ""
+        sum_ALL_ = sum_ALL['length__sum'] if sum_ALL['length__sum']!=None else ""
+
+        reportrow =(supplier.name,"",sum_MAG_,sum_PRD_,sum_ALL_,"D")
+        reportrows.append(reportrow)
+        for index in Index.objects.all():
+            sum_MAG = Package.objects.filter(index=index,localisation="MAG",supplier=supplier).aggregate(Sum('length')) 
+            sum_PRD = Package.objects.filter(index=index,localisation="PRD",supplier=supplier).aggregate(Sum('length'))
+            sum_ALL = Package.objects.filter(index=index,supplier=supplier).exclude(localisation="CLOSED").aggregate(Sum('length'))
+            sum_MAG_ = sum_MAG['length__sum'] if sum_MAG['length__sum']!=None else ""
+            sum_PRD_ = sum_PRD['length__sum'] if sum_PRD['length__sum']!=None else ""
+            sum_ALL_ = sum_ALL['length__sum'] if sum_ALL['length__sum']!=None else ""
+            reportrow = (index.sap,  index.name,sum_MAG_,sum_PRD_,sum_ALL_,"I")
+            reportrows.append(reportrow)
+
+    context = {
+        'reportrows': reportrows,
+    }
+
+    return render(request, url, context)
+
+
+
+
+def print_label(request, *args, **kwargs):
+    pk = kwargs['pk']
+    try:
+        package = Package.objects.get(pk=pk)
+        package.create_label(True)
+        
+    except:
+        raise Http404
+
+    return HttpResponse(Package.objects.get(pk=pk))
+
+
+
 @csrf_exempt
 def scanner_load(request):
     #poststream = request.POST['typ']
@@ -329,6 +388,12 @@ def scanner_load(request):
     #    request_[posts.split("=")[0]]=posts.split("=")[1]
     #print(request_)
     typ = request.POST['typ']
+    username = request.POST['username'][:14]
+    print(username)
+    scanner = request.POST['scanner'][:14]
+
+    
+
 
     sap_str = ""
     if typ == "indexy":
@@ -351,7 +416,8 @@ def scanner_load(request):
                 delivery_date = request.POST['delivery_date']  ## Uwaga na format!!!
                 length = request.POST['length']
                 package = Package.objects.create(index=index,supplier=supplier,delivery_date=request.POST['delivery_date'],localisation='MAG',length=length)
-                create_log(0,"", package.length,package.length, package.localisation, "MAG", package.delivery_date, package.delivery_date)
+    
+                create_log(0,"", package.length,package.length, package.localisation, "MAG", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,package.supplier.pk)
                 package.create_label()
             sap_str = f"utworzono {request.POST['qty']} paczek/paczki {request.POST['index']}"
         except:
@@ -366,21 +432,37 @@ def scanner_load(request):
         except: 
             return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
     if typ == "warehouse_package":
+        #try:
+        package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
+
+        create_log(0,"", package.length,request.POST['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,package.supplier.pk)
+        package.localisation = "MAG"
+        package.length = request.POST['length']
+        package.save()
+        sap_str =(f"Paczka {request.POST['package']} wprowadzona na magazyn")
+
+#        except: 
+#            return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
+
+    if typ == "warehouse_package_update":
         try:
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
-            create_log(0,"", package.length,request.POST['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date)
+
+            create_log(4,"", package.length,request.POST['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,package.supplier.pk)
             package.localisation = "MAG"
             package.length = request.POST['length']
             package.save()
-            sap_str =(f"Paczka {request.POST['package']} wprowadzona na magazyn")
+            sap_str =(f"Paczka {request.POST['package']} zaktualizowana")
 
         except: 
             return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
 
+
     if typ == "release_package":
         try:
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
-            create_log(1,"", package.length,request.POST['length'], package.localisation, "PRD", package.delivery_date, package.delivery_date)
+    
+            create_log(1,"", package.length,request.POST['length'], package.localisation, "PRD", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,package.supplier.pk)
             package.localisation = "PRD"
             package.length = request.POST['length']
             package.save()
@@ -392,7 +474,8 @@ def scanner_load(request):
     if typ == "close_package":
         try:
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
-            create_log(2,"", package.length,request.POST['length'], package.localisation, "CLOSED", package.delivery_date, package.delivery_date)
+
+            create_log(2,"", package.length,request.POST['length'], package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,package.supplier.pk)
             package.localisation = "CLOSED"
             package.length = request.POST['length']
             package.save()
@@ -413,7 +496,7 @@ def scanner_load(request):
         length = request.POST['length']
         try:
             package = Package.objects.get(pk=request.POST['package'])
-            create_log(3,"", package.length,length, package.localisation, request.POST['localisation'], package.delivery_date, request.POST['delivery_date'])
+            create_log(3,"", package.length,length, package.localisation, request.POST['localisation'], package.delivery_date, request.POST['delivery_date'],username,scanner,package.index.pk,package.pk,pakage.supplier.pk)
 
             package.index=index
             package.supplier=supplier

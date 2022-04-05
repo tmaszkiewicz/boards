@@ -1,0 +1,41 @@
+{% extends "boards/base.html" %}
+{% block body %}
+<div class="container">
+
+<table id="rep" class="table table-striped table-dark">
+    <thead>  
+            <th scope="col" class="col-2">DOSTAWCA<br>SAP-INDEX</th>
+            <th scope="col" class="col-3">INDEX</th>
+            <th scope="col" class="col-2">ŁĄCZNIE MAG</th>
+            <th scope="col" class="col-2">ŁĄCZNIE PRD</th>
+            <th scope="col" class="col-2">ŁĄCZNIE</th>
+
+    </thead>
+    <tbody>
+        {%for reportrow in reportrows %}
+        {%if reportrow.5 == "D" %}
+        <tr style="background-color: darkblue;">
+        {%else%}
+        <tr>
+        {%endif%}
+            <td>
+            {{reportrow.0}}
+            </td>
+            <td>
+            {{reportrow.1}}
+            </td>
+            <td>
+            {{reportrow.2}}
+            </td>
+            <td>
+            {{reportrow.3}}
+            </td>
+            <td>
+                {{reportrow.4}}
+            </td>
+            </tr>
+        {%endfor%}
+    </tbody>
+</table>
+{% endblock body %}
+

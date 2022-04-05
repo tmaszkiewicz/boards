@@ -98,6 +98,7 @@ class Log(models.Model):
         (1,'PRD'),
         (2,'CLOSED'),
         (3,'EDIT'),
+        (4,'UPDATE'),
     )
     package = models.ForeignKey(Package,on_delete=models.SET_NULL,null=True)
     index_before = models.ForeignKey(Index,on_delete=models.SET_NULL,null=True,related_name="index_before")
