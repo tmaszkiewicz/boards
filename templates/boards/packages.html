@@ -16,31 +16,37 @@
     <table id="tabela" class="table table-striped table-dark">
         <thead>  
             <tr>
-                <th scope="col" class="col-2">
+                <th scope="col" class="col-1">
                     <!--<label class="control-label">SAP</label>-->
-                    <input class= type="text" id="col1" onkeyup="myFilter(0,'col1')" size="7" placeholder="SAP" title="Filtruj SAP">
+                    <input class= type="text" id="col0" onkeyup="myFilter(0,'col0')" size="7" placeholder="package" title="Filtruj Paczkę">
+                    <span class="glyphicon glyphicon-search"></span>
+
+                </th>
+                <th scope="col" class="col-1">
+                    <!--<label class="control-label">SAP</label>-->
+                    <input class= type="text" id="col1" onkeyup="myFilter(1,'col1')" size="7" placeholder="SAP" title="Filtruj SAP">
                     <span class="glyphicon glyphicon-search"></span>
 
                 </th>
                 <th scope="col" class="col-2">
                     <!--<label class="control-label">INDEX</label>-->
-                    <input class= type="text" id="col2" onkeyup="myFilter(1,'col2')" size="7" placeholder="INDEX" title="Filtruj INDEX">
+                    <input class= type="text" id="col2" onkeyup="myFilter(2,'col2')" size="7" placeholder="INDEX" title="Filtruj INDEX">
                     <span class="glyphicon glyphicon-search"></span>
 
                 </th>
                 <th scope="col" class="col-2">
                     <!--<label class="control-label">DOSTAWCA</label>-->
-                    <input class= type="text" id="col3" onkeyup="myFilter(2,'col3')" size="7" placeholder="DOSTAWCA" title="Filtruj DOSTAWCA">
+                    <input class= type="text" id="col3" onkeyup="myFilter(3,'col3')" size="7" placeholder="DOSTAWCA" title="Filtruj DOSTAWCA">
                     <span class="glyphicon glyphicon-search"></span>
                 </th>
                <th scope="col" class="col-2">
                    <!--<label class="control-label">LOKALIZACJA</label>-->
-                   <input class= type="text" id="col4" onkeyup="myFilter(3,'col4')" size="7" placeholder="LOKALIZACJA" title="Filtruj LOKALIZACJA">
+                   <input class= type="text" id="col4" onkeyup="myFilter(4,'col4')" size="7" placeholder="LOKALIZACJA" title="Filtruj LOKALIZACJA">
                    <span class="glyphicon glyphicon-search"></span>
 
                 </th>
-                <th scope="col" class="col-2">DŁUGOŚĆ</th>
-                <th scope="col" class="col-2">WZ</th>
+                <th scope="col" class="col-1">DŁUGOŚĆ</th>
+                <th scope="col" class="col-1">WZ</th>
 
                 <th scope="col" class="col-1" align="center">EDYTUJ</th>
                 <th scope="col" class="col-1" align="center">USUŃ</th>
@@ -50,7 +56,11 @@
     <tbody>
     {% for package in packages %}
     <tr>
-        <td class="col-2" align="left">
+        <td class="col-1" align="left">
+            {{package.pk}}  
+        </td>
+
+        <td class="col-1" align="left">
             {{package.index.sap}}  
         </td>
         <td class="col-2" align="left">
@@ -65,10 +75,10 @@
         <td class="col-2" align="left">
             {{package.localisation}}
         </td>
-        <td class="col-2" align="left">
+        <td class="col-1" align="left">
             {{package.length}} m
         </td>
-        <td class="col-2" align="left">
+        <td class="col-1" align="left">
             {% if package.wz != None %}
             {{package.wz}}
             {%endif%}
