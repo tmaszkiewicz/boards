@@ -29,6 +29,9 @@ router.register(r'api/supplier', views.SupplierViewSet)
 urlpatterns = [
     path('', views.home,name='home'),
     path('', include(router.urls)),
+    re_path(r'^loginlocal/$', views.loginlocal,name='loginlocal'),
+    re_path(r'^logoutlocal/$', views.logoutlocal,name='logoutlocal'),
+ 
     re_path(r'^scanner/load/$', views.scanner_load,name='scanner_load'),
     re_path(r'^scanner/load2/$', views.scanner_load2,name='scanner_load2'),
     
@@ -36,10 +39,13 @@ urlpatterns = [
     re_path(r'^suppliers/$', views.suppliers,name='suppliers'),
     re_path(r'^suppliers_add/$', views.suppliers_add,name='suppliers_add'),
     re_path(r'^packages/$', views.packages,name='packages'),
+    re_path(r'^packages_filter/$', views.packages_filter,name='packages_filter'),
     re_path(r'^indexes/$', views.indexes,name='indexes'),
+    re_path(r'^info_del/$', views.info_del,name='info_del'),
     re_path(r'^indexes_add/$', views.indexes_add,name='indexes_add'),
     re_path(r'^index_report/$', views.index_report,name='index_report'),
     re_path(r'^index_report2/$', views.index_report2,name='index_report2'),
+    re_path(r'^index_report3/$', views.index_report3,name='index_report3'),
     re_path(r'^suppliers_report/$', views.suppliers_report,name='suppliers_report'),
     re_path(r'^packages_delivery/$',views.packages_delivery,name='packages_delivery'),
     re_path(r'^packages_delivery_edit/$',views.packages_delivery_edit,name='packages_delivery_edit'),

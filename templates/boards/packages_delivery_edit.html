@@ -20,7 +20,7 @@
 
 
 
-    <table id="table_delivery" class="table table-striped table-dark">
+    <table id="table_delivery" class="table table-bordered">
         <thead>  
             <tr>
                 <th scope="col" class="col-2">PACZKA</th>
@@ -35,6 +35,7 @@
 
                 <th scope="col" class="col-1" align="center">Edytuj</th>
                 <th scope="col" class="col-1" align="center">Usuń</th>
+                <th scope="col" class="col-1" align="center">Drukuj</th>
             </tr>
         </thead>
 
@@ -65,23 +66,36 @@
         </td>
         
         <td class="col-1" align="center">
-            <a href="/boards/packages_edit/{{package.pk}}">Edutuj</a>
+            <a href="/boards/packages_edit/{{package.pk}}"><i class="bi bi-pencil"></i></a>
         </td>
         <td class="col-1" align="center"> 
-            <a href="/boards/packages_del/{{package.pk}}">X</a>
+            <a href="/boards/packages_del/{{package.pk}}"><i class="bi bi-file-earmark-minus"></i></a>
+        </td>
+        <td class="col-1" align="center"> 
+            <a href="/boards/print_label/{{package.pk}}"><i style="font-size: 2rem;" class="bi bi-printer"></i></a>
         </td>
     </tr>
  
     {% endfor %}
+    </tbody>
+    </table>
+    <table>
+    <tbody>
 
     <tr>
         <td class="col-2" colspan="9" align="center">
             
-            <button type="button" class="btn btn-primary btn-lg" onclick="drukuj('table_delivery')">DRUKUJ</button>
+            <button type="button" class="btn btn-primary btn-lg" onclick="act('table_delivery','print_label')">DRUKUJ DOSTAWĘ</button>
+            <a href="/boards/info_del/">
+            <button type="button" class="btn btn-secondary btn-lg" onclick="act('table_delivery','packages_del')">USUŃ DOSTAWĘ</button></a>
+            <button type="button" class="btn btn-secondary btn-lg" id="btnExport" onclick="ExportToExcel('table_delivery','xlsx')">EXPORT REPORT</button>
+
 
         </td>
     </tr>
     </tbody>
+    </table>
+
 
 
 

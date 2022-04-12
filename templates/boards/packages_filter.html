@@ -1,0 +1,126 @@
+{% extends "boards/base.html" %}
+{% block body %}
+
+<div class="container">
+    <br><br>
+    <form method="post" name="sort" action="">          
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-3">
+                <label for="package">Paczka:</label>
+                <input type="text" id="package" name="package">
+            </div>
+            <div  class="col-3">
+                <label for="package">WZ:</label>
+                <input type="text" id="wz" name="wz">
+            </div>
+            <div  class="col-3">
+                <label for="package">DATA:</label>
+                <input type="date" id="delivery_date" name="delivery_date">
+            </div>
+
+            <div  class="col-3">
+                <label for="sort">Sortowanie:</label>
+                <select id="sort" name="sort">
+                    {%for s in sorts %}
+                <option value="{{s}}" >{{s}}</option>
+                    {%endfor%}
+                </select>
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col">
+                <input type="submit">
+            </div>
+        </div>
+
+    </form>
+    </div>
+    <div class="container">
+
+    <table id="tabela" class="table table-bordered">
+        <thead>  
+            <tr>
+                <th scope="col" class="col-1">
+                    PACZKA
+
+                </th>
+                <th scope="col" class="col-1">
+                    SAP
+
+                </th>
+                <th scope="col" class="col-2">
+                    INDEX
+
+                </th>
+                <th scope="col" class="col-2">
+                    DOSTAWCA
+                </th>
+               <th scope="col" class="col-2">
+                   LOKALIZACJA
+                </th>
+                <th scope="col" class="col-1">
+                    DŁUGOŚĆ
+                </th>
+
+
+                <th scope="col" class="col-1">
+                    WZ
+                </th>
+            </tr>
+        </thead>
+
+    <tbody>
+    {% for package in packages %}
+    <tr>
+        <td class="col-1" align="left">
+            {{package.pk}}  
+        </td>
+
+        <td class="col-1" align="left">
+            {{package.index.sap}}  
+        </td>
+        <td class="col-2" align="left">
+            {{package.index.name}}  
+        </td>
+        <td class="col-2" align="left">
+            {% if package.supplier != None %}
+            {{package.supplier}}  
+            {% endif %}
+
+        </td>
+        <td class="col-2" align="left">
+            {{package.localisation}}
+        </td>
+        <td class="col-1" align="left">
+            {{package.length}} m
+        </td>
+        <td class="col-1" align="left">
+            {% if package.wz != None %}
+            {{package.wz}}
+            {%endif%}
+        </td>
+        <!--
+        <td class="col-1" align="center">
+            <a href="/boards/packages_edit/{{package.pk}}">Edutuj</a>
+        </td>
+        <td class="col-1" align="center"> 
+            <a href="/boards/packages_del/{{package.pk}}">X</a>
+        </td>
+        -->
+    </tr>
+ 
+    {% endfor %}
+    </tbody>
+</div>
+
+  
+
+
+    
+{% endblock body %}
+<script type="text/javascript">
+    function myFilter(pos,inp) {
+        alert("sdfdfdf");
+    }

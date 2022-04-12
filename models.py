@@ -58,14 +58,18 @@ class Package(models.Model):
         _barcode.drawOn(c, 20, 130)
 
         c.setFont('AlegreyaSC', size=20)
-        c.drawString(10,200,f"SAP Index: {self.index.sap}")
-        c.setFont('AlegreyaSC', size=10)
-        c.drawString(10,180,self.index.name)
+        c.drawString(10,220,f"SAP Index: {self.index.sap}")
+        #c.setFont('AlegreyaSC', size=10)
+        c.setFont('AlegreyaSC', size=15)
+        c.drawString(10,190,self.index.name[:24])
+        c.drawString(10,180,self.index.name[25:])
+
         c.setFont('AlegreyaSC', size=13)
         c.drawString(80,120,self.pk_formatted)
-        c.drawString(10,80,f"Data przyjęcia: {self.delivery_date}")
-        c.drawString(10,60,f"Dostawca: {self.supplier}")
-        c.drawString(10,40,f"Długość: _____________")
+        c.drawString(10,90,f"WZ: {self.wz}")
+        c.drawString(10,70,f"Data przyjęcia: {self.delivery_date}")
+        c.drawString(10,50,f"Dostawca: {self.supplier}")
+        c.drawString(10,30,f"Długość: _____________")
         
 
         c.showPage()

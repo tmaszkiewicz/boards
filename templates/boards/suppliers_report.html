@@ -2,7 +2,7 @@
 {% block body %}
 <div class="container">
 
-<table id="rep" class="table table-striped table-dark">
+<table id="rep" class="table table-bordered">
     <thead>  
             <th scope="col" class="col-2">DOSTAWCA<br>SAP-INDEX</th>
             <th scope="col" class="col-3">INDEX</th>
@@ -14,7 +14,7 @@
     <tbody>
         {%for reportrow in reportrows %}
         {%if reportrow.5 == "D" %}
-        <tr style="background-color: darkblue;">
+        <tr style="background-color: lightblue;">
         {%else%}
         <tr>
         {%endif%}

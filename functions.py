@@ -8,8 +8,9 @@ def create_log(operation, userid, length_before,length_after,localisation_before
     #try:
     log = Log()
     log.index_before=Index.objects.get(pk=index_pk) 
-    log.supplier_before=Supplier.objects.get(pk=supplier_pk)
-    log.package_before=Package.objects.get(pk=package_pk)  
+    if supplier_pk != "0":
+        log.supplier_before=Supplier.objects.get(pk=supplier_pk)
+    log.package=Package.objects.get(pk=package_pk)  
     print(log.index_before)
     log.operation = operation
     log.scanner = scanner
