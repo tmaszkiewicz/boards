@@ -1,13 +1,14 @@
 from math import fabs
 import pkgutil
+from re import T
 from statistics import mode
 from tkinter import Widget
 from django.db import models
 from django import forms
 from datetime import date
+from django.http import HttpResponse
 
 # Create your models here.
-
 
 class Supplier(models.Model):    
     name = models.CharField(max_length=150,blank=False,null=False)
@@ -29,6 +30,7 @@ class Index(models.Model):
 
 class Package(models.Model):
     # = models.CharField(max_length=12,blank=False,null=False,default="0")
+    paczka = models.CharField(max_length=10,blank=True,null=True,default="")
     index = models.ForeignKey(Index,on_delete=models.CASCADE,null=False)
     delivery_date = models.DateField(default=date.today)
     delivery_time = models.DateTimeField(auto_now=True)
@@ -44,7 +46,7 @@ class Package(models.Model):
         return "0" * (12-len(str(self.pk)))+ str(self.pk)
         self.pk_formatted = "0" #* (12-len(str(self.pk))) #+ str(self.pk)
     
-    def create_label(self,print):
+    def create_label(self,print,labels):
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
         from reportlab.pdfgen import canvas
@@ -69,17 +71,74 @@ class Package(models.Model):
         c.drawString(10,90,f"WZ: {self.wz}")
         c.drawString(10,70,f"Data przyjęcia: {self.delivery_date}")
         c.drawString(10,50,f"Dostawca: {self.supplier}")
+        c.drawString(70,30,f"PACZKA:___________")
         c.drawString(10,30,f"Długość: _____________")
+        c.showPage()
+        c.save()
+        import time
+
+        if print==True:
+            call(['/etc/init.d/cups start'], shell=True)
+
+            call(['lp -o Resolution=203dpi -o portrait -o PageSize=w880h980mm tmp/etykieta.pdf'], shell=True) 
+            #call(['lp -o Resolution=203dpi -o portrait -o PageSize=w144h216 tmp/etykieta.pdf'], shell=True) 
+            call(['rm tmp/etykieta.pdf'], shell=true) 
+
+    def create_label_large(self,print,labels,sep_labels):
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.units import cm
+        from reportlab.graphics.barcode import code128
+        from subprocess import call
+        pdfmetrics.registerFont(TTFont('AlegreyaSC', 'boards/static/ttf/AlegreyaSC-Bold.ttf'))
+        _barcode = code128.Code128(self.pk_formatted,barHeight=35,barWidth = 1.8)
+        #c = canvas.Canvas("tmp/etykieta.pdf", pagesize=(7.8 * cm, 5.4 * cm))
+        if sep_labels:
+            c = canvas.Canvas("tmp/etykieta_large"+ str(self.pk) +".pdf", pagesize=(8.8 * cm, 20.5 * cm))
+        else:
+            c = canvas.Canvas("tmp/etykieta_large.pdf", pagesize=(8.8 * cm, 20.5 * cm))
+
+
+        c.setFont('AlegreyaSC', size=20)
+        c.drawString(10,520,self.index.name[:19])
+        c.drawString(10,490,self.index.name[19:48])
+        c.drawString(10,460,self.index.name[48:])
+        c.drawString(10,430,f"{labels['index_sap']}: {self.index.sap}")
+        #c.setFont('AlegreyaSC', size=10)
+
+        _barcode.drawOn(c, 18, 300)
+
+        c.setFont('AlegreyaSC', size=15)
+        c.drawString(80,280,self.pk_formatted)
+        c.drawString(10,190,f"{labels['package_wz']}: {self.wz}")
+        c.drawString(10,160,f"{labels['package_delivery_date']}: {self.delivery_date}")
+        c.drawString(10,130,f"{labels['package_supplier']}: {self.supplier}")
+        c.drawString(10,100,f"{labels['package_paczka']}    : ______________________")
+        c.drawString(10,70,f"{labels['package_length']} : _____________________")
+        c.drawString(10,40,f"                            _____________________")
         
 
         c.showPage()
         c.save()
         if print==True:
             call(['/etc/init.d/cups start'], shell=True)
+            if sep_labels:
+                comm ='lp -o Resolution=203dpi -o portrait -o PageSize=w100h2050mm tmp/etykieta_large'+ str(self.pk) +'.pdf'
+                er_comm = 'rm tmp/etykieta_large'+str(self.pk)+'.pdf'
+            else:
+                comm ='lp -o Resolution=203dpi -o portrait -o PageSize=w100h2050mm tmp/etykieta_large.pdf'
+                er_comm = 'rm tmp/etykieta_large.pdf'
+            call([comm],shell=True)
+            call([er_comm],shell=True)
 
-            call(['lp -o Resolution=203dpi -o portrait -o PageSize=w880h980mm tmp/etykieta.pdf'], shell=True) 
+            #call(['rm tmp/etykieta_large.pdf'], shell=True) 
+
+                #call(['lp -o Resolution=203dpi -o portrait -o PageSize=w100h2050mm tmp/etykieta_large.pdf'], shell=False) 
+            #call(['lp -o Resolution=203dpi -o portrait -o PageSize=w980h2500mm tmp/etykieta_large.pdf'], shell=True) 
             #call(['lp -o Resolution=203dpi -o portrait -o PageSize=w144h216 tmp/etykieta.pdf'], shell=True) 
-            
+            #call(['rm tmp/etykieta_large.pdf'], shell=True) 
+
 
 
     def __str__(self):
@@ -122,6 +181,8 @@ class Log(models.Model):
     localisation_after =  models.CharField(max_length=15,blank=True,null=True)
     delivery_date_before = models.DateField()
     delivery_date_after = models.DateField()
+    paczka_before = models.CharField(max_length=10,blank=True,null=True,default="")
+    paczka_after = models.CharField(max_length=10,blank=True,null=True,default="")
     def __str__(self):
         return f"{self.scanner} {self.operation} {self.time}"
 

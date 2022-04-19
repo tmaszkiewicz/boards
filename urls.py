@@ -50,10 +50,11 @@ urlpatterns = [
     re_path(r'^packages_delivery/$',views.packages_delivery,name='packages_delivery'),
     re_path(r'^packages_delivery_edit/$',views.packages_delivery_edit,name='packages_delivery_edit'),
     path('packages_edit/<int:pk>',views.packages_edit,name='packages_edit'),
+    path('packages_index/<int:pk>/<slug:wz>',views.packages_index,name='packages_index'),
     path('suppliers_del/<int:pk>',views.suppliers_del,name='suppliers_del'),
     path('indexes_del/<int:pk>',views.indexes_del,name='indexes_del'),
     path('packages_del/<int:pk>',views.packages_del,name='packages_del'),
-    path('print_label/<int:pk>',views.print_label,name='print_label'),
+    path('print_label/<str:prt>/<int:pk>',views.print_label,name='print_label'),
 
     path('scanner/load3/read_package/<str:pk>', views.scanner_load3_read_package,name='scanner_load3_read_package'),
     path('scanner/load3/warehouse_package/<str:pk>/<str:length>', views.scanner_load3_warehouse_package,name='scanner_load3_warehouse_package'),

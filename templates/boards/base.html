@@ -163,14 +163,16 @@ function expand(tableId,rowId) {
 
 function act(tableId, action) {
   var rowCnt  =  document.getElementById(tableId).getElementsByTagName("tr").length;
-  console.log("rowCnt:",rowCnt);
-  for(row=1;row< rowCnt; row++)
+  console.log("rowCnt:",rowCnt,"uu");
+  for(row=1;row < rowCnt; row++)
     {
+
       var label = document.getElementById(tableId).getElementsByTagName("tr")[row].getElementsByTagName("td")[0].innerText;
       console.log(label)
       const Http = new XMLHttpRequest();
       const url='http://10.30.1.107:8000/boards/'+action+'/'+label.trim();
       console.log(url);
+      
       Http.open("GET", url);
       Http.send();
       Http.onreadystatechange = (e) => {console.log(Http.responseText)}

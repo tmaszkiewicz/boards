@@ -4,7 +4,7 @@ from .models import Log,Index,Supplier,Package
 def delivery_print():
     print("test")
     pass
-def create_log(operation, userid, length_before,length_after,localisation_before,localisation_after,delivery_date_before,delivery_date_after,username,scanner,index_pk,package_pk,supplier_pk):
+def create_log(operation, userid, length_before,length_after,localisation_before,localisation_after,delivery_date_before,delivery_date_after,username,scanner,index_pk,package_pk,supplier_pk,paczka_before,paczka_after):
     #try:
     log = Log()
     log.index_before=Index.objects.get(pk=index_pk) 
@@ -22,6 +22,9 @@ def create_log(operation, userid, length_before,length_after,localisation_before
     log.localisation_after = localisation_after
     log.delivery_date_before = delivery_date_before
     log.delivery_date_after= delivery_date_after
+    log.paczka_before= paczka_before
+    log.paczka_after= paczka_after
+
     log.save()
     return "OK"
     #except:

@@ -1,43 +1,13 @@
 {% extends "boards/base.html" %}
 {% block body %}
 
-<div class="container">
-    <br><br>
-    <form method="post" name="sort" action="">          
-        {% csrf_token %}
-        <div class="row">
-            <div class="col-3">
-                <label for="package">{{labels.package_pk}}:</label>
-                <input type="text" id="package" name="package">
-            </div>
-            <div  class="col-3">
-                <label for="wz">{{labels.package_wz}}:</label>
-                <input type="text" id="wz" name="wz">
-            </div>
-            <div  class="col-3">
-                <label for="date">{{labels.package_delivery_date}}:</label>
-                <input type="date" id="delivery_date" name="delivery_date">
-            </div>
 
-            <div  class="col-3">
-                <label for="sort">Sortowanie:</label>
-                <select id="sort" name="sort">
-                    {%for s in sorts %}
-                <option value="{{s}}" >{{s}}</option>
-                    {%endfor%}
-                </select>
-            </div>
-
-        </div>
-        <div class="row">
-            <div class="col">
-                <input type="submit">
-            </div>
-        </div>
-
-    </form>
-    </div>
     <div class="container">
+        <br><p>
+            <center>
+        <a href={{return_path}}>POWRÓT</a>
+            </center>
+        <br><p>
 
     <table id="tabela" class="table table-bordered">
         <thead>  
@@ -63,11 +33,13 @@
                     {{labels.package_supplier}}
                 </th>
                <th scope="col" class="col-2">
-                   {{labels.package_localisation}}
-                </th>
+                    {{labels.package_localisation}}
+            </th>
                 <th scope="col" class="col-1">
                     {{labels.package_length}}
                 </th>
+
+
                 <th scope="col" class="col-1">
                     {{labels.package_wz}}
                 </th>
