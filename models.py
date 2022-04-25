@@ -1,3 +1,4 @@
+from ast import operator
 from math import fabs
 import pkgutil
 from re import T
@@ -38,6 +39,7 @@ class Package(models.Model):
     werk = models.CharField(max_length=10,blank=False,null=False,default="3000")
     localisation = models.CharField(max_length=15,blank=False,null=False)
     length = models.FloatField(default="0",blank=True,null=True)
+    length_on_close = models.FloatField(default="0",blank=True,null=True)
     wz = models.CharField(max_length=15,blank=True,null=True)
 
     #description = models.CharField(max_length=100,blank=True,null=True)
@@ -162,6 +164,7 @@ class Log(models.Model):
         (2,'CLOSED'),
         (3,'EDIT'),
         (4,'UPDATE'),
+        (5,'DELIVERED'),
     )
     package = models.ForeignKey(Package,on_delete=models.SET_NULL,null=True)
     index_before = models.ForeignKey(Index,on_delete=models.SET_NULL,null=True,related_name="index_before")
@@ -183,6 +186,9 @@ class Log(models.Model):
     delivery_date_after = models.DateField()
     paczka_before = models.CharField(max_length=10,blank=True,null=True,default="")
     paczka_after = models.CharField(max_length=10,blank=True,null=True,default="")
+    def operation_name(self):
+        return self.op[self.operation][1]
+
     def __str__(self):
         return f"{self.scanner} {self.operation} {self.time}"
 

@@ -16,7 +16,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets
 from .models import IndexForm, Index, Supplier, PackageForm, Package
-from .models import PackageTrash, IndexForm, SupplierForm, CurrentUser
+from .models import PackageTrash, IndexForm, SupplierForm, CurrentUser, Log
 from .functions import create_log
 from .serializers import IndexSerializer, SupplierSerializer, PackageSerializer
 from .forms import LoginForm
@@ -35,8 +35,85 @@ LABELS = {
     'package_localisation':'LOKALIZACJA',
     'package_length':'DŁUGOŚĆ',
     'package_wz':'WZ',
+    'log_package':'ID PACZKI',
+    'log_operation':'OPERACJA',
+    'log_time':'CZAS',
+    'log_username':'UŻYTKOWNIK',
+    'log_length_before':'DŁUGOŚĆ',
+    'log_length_after':'DŁUGOŚĆ',
+    'log_localisation_before':'LOKALIZACJA',
+    'log_localisation_after':'LOKALIZACJA',
+
+
+
 
 }
+
+def stany_magazyn(request, *args, **kwargs):
+    url='boards/stany_magazyn.html'
+    indexes = Index.objects.all()
+    context = {}
+    stany = [] 
+    for index in indexes:
+        stan = {}
+        sum_MAG = Package.objects.filter(index=index,localisation="MAG").aggregate(Sum('length'))
+        stan['index'] = index
+        
+        stan['suma'] = sum_MAG['length__sum'] if sum_MAG['length__sum']!=None else 0
+        stany.append(stan)
+    context['labels'] = LABELS
+    context['stany'] = stany
+
+    return render(request,url,context)
+def stany_produkcja(request, *args, **kwargs):
+    url='boards/stany_produkcja.html'
+    indexes = Index.objects.all()
+    context = {}
+    stany = [] 
+    for index in indexes:
+        stan = {}
+        sum_PRD = Package.objects.filter(index=index,localisation="PRD").aggregate(Sum('length'))
+        stan['index'] = index
+        
+        stan['suma'] = sum_PRD['length__sum'] if sum_PRD['length__sum']!=None else 0
+        stany.append(stan)
+    context['labels'] = LABELS
+    context['stany'] = stany
+
+    return render(request,url,context)
+
+def stany_lacznie(request, *args, **kwargs):
+    url='boards/stany_lacznie.html'
+    indexes = Index.objects.all()
+    context = {}
+    stany = [] 
+    for index in indexes:
+        stan = {}
+        sum_PRD = Package.objects.filter(index=index,localisation="PRD").aggregate(Sum('length'))
+        sum_MAG = Package.objects.filter(index=index,localisation="MAG").aggregate(Sum('length'))
+        sum_ALL = Package.objects.filter(index=index).exclude(localisation="CLOSED").aggregate(Sum('length'))
+        stan['index'] = index
+        stan['suma_prd'] = sum_PRD['length__sum'] if sum_PRD['length__sum']!=None else 0
+        stan['suma_mag'] = sum_MAG['length__sum'] if sum_MAG['length__sum']!=None else 0
+        stan['suma_all'] = sum_ALL['length__sum'] if sum_ALL['length__sum']!=None else 0
+        stany.append(stan)
+    context['labels'] = LABELS
+    context['stany'] = stany
+    return render(request,url,context)
+
+
+
+
+def packages_history(request, *args, **kwargs):
+    url = 'boards/packages_history.html'
+    context  = {
+
+    }
+
+    pk = kwargs['pk']
+    context['logs'] = Log.objects.filter(package__pk=pk)
+    context['labels'] = LABELS
+    return render(request,url,context)
 
 def info_del(request, *args, **kwargs):
     url='boards/info_del.html'
@@ -107,6 +184,7 @@ def packages_index(request, *args, **kwargs):
 @login_required(login_url='/boards/loginlocal/')      
 def packages_delivery(request, *args, **kwargs):
     url = 'boards/packages_delivery.html'
+
     context = {
     }
     if request.method == 'POST':
@@ -120,6 +198,13 @@ def packages_delivery(request, *args, **kwargs):
             #package = Package.objects.create(index=index,supplier=supplier,delivery_date=request.POST['delivery_date'],localisation='MAG',length=request.POST['length'])
             package = Package.objects.create(index=index,supplier=supplier,delivery_date=request.POST['delivery_date'],localisation='DOST',wz=request.POST['wz'])
             package.create_label_large(True,LABELS,False) if 'print' in request.POST.keys()  else package.create_label_large(False,LABELS,False)
+            try:
+                create_log(5,"", package.length,package.length, package.localisation, package.localisation, package.delivery_date, package.delivery_date, request.user , "PC",package.index.pk,package.pk,supplier.pk,package.paczka,package.paczka)
+            except  Exception as e:
+                print(f"Nie utworzono loga {e}")
+
+
+
         info = f"Dodano paczkę  indeksu: {index.name} od dostawcy {supplier}"
         context['info'] = info 
 
@@ -182,11 +267,11 @@ def packages(request, *args, **kwargs):
     context = {
     }
     if request.method == 'POST':
-        packages = Package.objects.all().order_by(request.POST['sort'])
+        packages = Package.objects.all().exclude(localisation="CLOSED").order_by(request.POST['sort'])
         context['actual_sort'] = request.POST['sort']
 
     else:
-        packages = Package.objects.all().order_by('-pk')
+        packages = Package.objects.all().exclude(localisation="CLOSED").order_by('-pk')
         context['actual_sort'] = 'pk'
     
     context['sorts']=sorts
@@ -246,7 +331,7 @@ def packages_delivery_edit(request, *args, **kwargs):
     #for package in packages:
     #    package.create_label()
 
-    context['wz'] = Package.objects.order_by('wz').values('wz').distinct()
+    context['wz'] = Package.objects.order_by('-wz').values('wz').distinct()
     context['packages']=packages
 
     return render(request, url, context)
@@ -274,6 +359,7 @@ def packages_edit(request, *args, **kwargs):
             package.supplier=None
         package.index.pk=request.POST['index']
         package.length=request.POST['length']
+        package.wz=request.POST['wz']
         package.save()
         return HttpResponseRedirect("/boards/packages_delivery_edit/")
 
@@ -287,9 +373,15 @@ def packages_edit(request, *args, **kwargs):
 @login_required(login_url='/boards/loginlocal/')      
 def packages_del(request,*args,**kwargs):
     pk = kwargs['pk']
+    #### PackageThrash - NIe tworzy się
     PackageTrash.objects.create(pk=pk,index=Package.objects.get(pk=pk).index,supplier=Package.objects.get(pk=pk).supplier,delivery_date=Package.objects.get(pk=pk).delivery_date,length=Package.objects.get(pk=pk).length,localisation=Package.objects.get(pk=pk).localisation)
     Package.objects.get(pk=pk).delete()
+
     return HttpResponseRedirect("/boards/packages/")
+    
+
+
+    
 @login_required(login_url='/boards/loginlocal/')      
 def suppliers_del(request, *args, **kwargs):
     pk = kwargs['pk']
@@ -367,8 +459,11 @@ def index_report3(request,*args,**kwargs):
         print(request.POST['wz'])
         wz = request.POST['wz']
     else:
-        sap = ""
-        wz = Package.objects.last().wz
+        try:
+            sap = ""
+            wz = Package.objects.last().wz
+        except:
+            raise Http404
 
     #if sap!="": ## DO KOREKTY OD STRONY ALGORYTMU MOŻE JAKIEŚ LIST EXTENSION??? ALBO FILTER??
         #indexes = Index.objects.filter(sap__startswith=sap)    
@@ -409,7 +504,7 @@ def index_report3(request,*args,**kwargs):
                 barcode = barcode+"0"
             barcode = barcode+str(package.pk)
 
-            reportline = ["P",barcode+"/"+package.paczka,n,package.delivery_date,package.localisation,package.length,"tr"+str(ind_nr), row_nr,"0"]
+            reportline = ["P",barcode,n,package.delivery_date,package.localisation,package.length,"tr"+str(ind_nr), row_nr, package.paczka]
 
             reportrows.append(reportline)
     wz_ = wz
@@ -421,6 +516,7 @@ def index_report3(request,*args,**kwargs):
     context['packages'] = packages
     context['reportrows'] = reportrows
     context['labels'] = LABELS
+    context['wz_list'] = Package.objects.values('wz').distinct()
     return render(request, url, context)
 
 
@@ -473,7 +569,7 @@ def index_report2(request,*args,**kwargs):
                 barcode = barcode+"0"
             barcode = barcode+str(package.pk)
 
-            reportline = ["P",barcode+"/"+package.paczka,n,package.delivery_date,package.localisation,package.length,"tr"+str(ind_nr), row_nr,"0"]
+            reportline = ["P",barcode,n,package.delivery_date,package.localisation,package.length,"tr"+str(ind_nr), row_nr,package.paczka]
 
             reportrows.append(reportline)
         
@@ -597,7 +693,9 @@ def scanner_load(request):
     #for posts in poststream.split("|")[1:]:
     #    request_[posts.split("=")[0]]=posts.split("=")[1]
     #print(request_)
+    print("request",request.POST)
     typ = request.POST['typ']
+
     username = request.POST['username'][:14]
     print(username)
     scanner = request.POST['scanner'][:14]
@@ -693,7 +791,9 @@ def scanner_load(request):
 
             create_log(2,"", package.length,request.POST['length'], package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
             package.localisation = "CLOSED"
-            package.length = request.POST['length']
+            package.length = 0 #request.POST['length']
+            package.length_on_close = request.POST['length']
+
             package.save()
             sap_str =(f"Paczka {request.POST['package']} została zakończona")
 

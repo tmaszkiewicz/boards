@@ -28,9 +28,6 @@
     {% for reportrow in reportrows %}
     {% if reportrow.0 == "I" %}
     <tr  style="background-color: rgb(255, 255, 255); color:black">
-    {%else%}
-    <tr style="display:none;background-color: rgb(200, 200, 200); color: black; ">
-    {%endif%}
         <td class="col-4" align="left">
             {% if reportrow.0 == "I" and reportrow.5 > 0%}
             <i id="{{reportrow.6}}" onclick="expand('rep','{{reportrow.6}}')" class="bi bi-file-plus"></i>
@@ -43,13 +40,13 @@
             {{reportrow.2}}
         </td>
         <td class="col-2" align="left">
-            {{reportrow.3}}
+            {{reportrow.3|floatformat:1}}
         </td>
         <td class="col-2" align="left">
-            {{reportrow.4}}
+            {{reportrow.4|floatformat:1}}
         </td>
         <td class="col-2" align="left">
-            {{reportrow.5}}
+            {{reportrow.5|floatformat:1}}
         </td>
         <td class="col-0" style="display:none;" align="left">
             {{reportrow.6}}
@@ -60,7 +57,51 @@
         <td class="col-0" style="display:none;" align="left">
             {{reportrow.0}}
         </td>
-        
+        {%else%}
+        <tr style="display:none;background-color: rgb(200, 200, 200); color: black; font-size: small;">
+            <td class="col-3" align="right">
+
+                {% if reportrow.0 == "I" and reportrow.8 > 0 %}
+                <i id="{{reportrow.6}}" onclick="expand('rep','{{reportrow.6}}')" class="bi bi-file-plus"></i>
+                <a href="/boards/packages_index/{{reportrow.9}}/{{wz}}">{{reportrow.1}}</a>
+                {%else%}
+                    BARCODE: {{reportrow.1}}
+                    <br>
+                    {%if reportrow.8 != ""  %}
+                    PACZKA: {{reportrow.8}}
+                    {% endif %}
+                {%endif%}
+            </td>
+            <td class="col-3" colspan="3" align="center">
+                    Dostawca: {{reportrow.2}}  <br>  Data dostawy: {{reportrow.3|date:'d-m-Y'}}  <br>  Lokalizacja:  {{reportrow.4}}
+            </td>
+    
+            <td class="col-2" align="left">
+                {{reportrow.5}}
+            </td>
+            
+            <td class="col-2" align="left" style="display:none">
+                1
+            
+            </td>
+            <td class="col-2" align="left" style="display:none;">
+            </td>
+    
+            <td class="col-2" style="display:none;" align="left">
+                {{reportrow.6}}
+            </td>
+            <td class="col-2" style="display:none;" align="left"> 
+                {{reportrow.7}}
+            </td>
+            <td class="col-2" style="display:none;" align="left">
+                {{reportrow.0}}
+            </td>
+            <td class="col-2" align="left" style="display:none;">
+                {{reportrow.8}}
+            </td>
+                   
+        {%endif%}
+            
     </tr>
     
     </div>

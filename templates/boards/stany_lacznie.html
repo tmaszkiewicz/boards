@@ -1,0 +1,50 @@
+{% extends "boards/base.html" %}
+{% block body %}
+<div class = "container">
+    <table class="table table-bordered">
+        <thead>              
+            <tr>
+                <th>
+                STANY PRODUKCJA/MAGAZYN
+                <th>
+            </tr>
+            <tr>
+                <th>
+                    {{labels.index_name}}
+                </th>
+                <th>
+                    MAGAZYN
+                </th>
+                <th>
+                    PRODUCJA
+                </th>
+                <th>
+                    ŁĄCZNIE
+                </th>
+
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                
+            {%for stan in stany%} 
+            <td>
+            {{stan.index}}
+            </td>
+            <td>
+            {{stan.suma_mag|floatformat:1}} m
+            </td>
+            <td>
+                {{stan.suma_prd|floatformat:1}} m
+            </td>
+            <td>
+                {{stan.suma_all|floatformat:1}} m
+            </td>
+
+
+                </tr>
+            {%endfor%}
+            </tbody>
+    </table>
+</div>
+{% endblock body %}

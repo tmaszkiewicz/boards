@@ -1,0 +1,71 @@
+{% extends "boards/base.html" %}
+{% block body %}
+    <div class="container">
+    <table id="tabela" class="table table-bordered">
+        <thead>              
+            <tr>
+                <th colspan="7">
+                {{labels.index_name}}: {{logs.0.package}}  <br>
+                {{labels.package_paczka}}: {{logs.0.package.pk }} <br>
+
+                {{labels.package_delivery_date}}: {{logs.0.delivery_date_before|date:"Y-m-d" }} <br>
+                {{labels.package_supplier}}: {{logs.0.supplier_before }}
+
+                </th>
+            </tr>
+            <tr>
+                <th scope="col" class="col-3">
+
+                    {{labels.log_time}}
+
+
+                </th>
+                <th scope="col" class="col-3">
+                    {{labels.log_operation}}
+
+                </th>
+
+                <th scope="col" class="col-3">
+                    
+                    {{labels.log_length_before}} 
+                </th>
+                <th scope="col" class="col-3">
+                    {{labels.log_username}}
+
+                </th>
+            </tr>
+        </thead>
+    <tbody>
+    {% for log in logs %}
+    <tr style="font-size: small;">
+        <td class="col-3" align="left">
+            {{log.time|date:"Y-m-d"}}
+            <br>
+            {{log.time|date:"h-m"}}
+        </td>
+        <td class="col-3" align="left">
+            <!--{{log.operation_name}} <br>-->
+            {{log.localisation_before}}  -> {{log.localisation_after}}
+        </td>
+
+        <td class="col-3" align="left">
+            {{log.length_before}}  -> {{log.length_after}}
+        </td>
+        <td class="col-3" align="left">
+            {{log.username}}  
+        </td>
+    </tr>
+ 
+    {% endfor %}
+    </tbody>
+</div>
+
+  
+
+
+    
+{% endblock body %}
+<script type="text/javascript">
+    function myFilter(pos,inp) {
+        alert("sdfdfdf");
+    }

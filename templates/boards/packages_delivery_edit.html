@@ -43,8 +43,7 @@
     {% for package in packages %}
     <tr>
         <td class="col-2" align="left">
-
-            {{package.pk}}
+            <a href="/boards/packages_history/{{package.pk}}">{{package.pk}}</a>
         </td>
         <td class="col-2" align="left">
             {{package.index.sap}}

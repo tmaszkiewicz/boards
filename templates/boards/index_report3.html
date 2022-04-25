@@ -13,9 +13,20 @@
         <input type="text" name="sap" id="sap"></input>
         </div>
         -->
-        <div class ="col-3">
+        <div class ="col-3">        
         <label for="wz">{{labels.package_wz}}</label>
-        <input type="text" name="wz" id="wz"></input>
+
+        <!--<input type="text" name="wz" id="wz"></input>-->
+        <input type="text" list="wzlist" name="wz" id="wz"></input>
+            <datalist id="wzlist">
+                {%for w in wz_list%}
+                {%if w.wz != None %}
+                <option>{{w.wz}}</option>
+                {%endif%}
+                {%endfor%}
+            </datalist>
+
+
         </div>
         <div>        
         <input type="submit"></input>
@@ -44,15 +55,15 @@
     {% for reportrow in reportrows %}
     {% if reportrow.0 == "I" %}
     <tr style="background-color: rgb(255, 255, 255); color:black">
-    {%else%}
-    <!--<tr style="display:none;background-color: rgb(200, 200, 200); color: black; ">-->
-    <tr style="display:none;background-color: rgb(200, 200, 200); color: black; ">
-    {%endif%}
         <td class="col-3" align="left">
 
             {% if reportrow.0 == "I" and reportrow.8 > 0 %}
             <i id="{{reportrow.6}}" onclick="expand('rep','{{reportrow.6}}')" class="bi bi-file-plus"></i>
+            {% if wz != "" %}
             <a href="/boards/packages_index/{{reportrow.9}}/{{wz}}">{{reportrow.1}}</a>
+            {%else%}
+            <a href="/boards/packages_index/{{reportrow.9}}/0">{{reportrow.1}}</a>
+            {%endif%}
             {%else%}
             {{reportrow.1}}
             {%endif%}
@@ -62,13 +73,13 @@
         </td>
 
         <td class="col-2" align="left">
-            {{reportrow.3}}
+            {{reportrow.3|floatformat:1}}
         </td>
         <td class="col-2" align="left">
-            {{reportrow.4}}
+            {{reportrow.4|floatformat:1}}
         </td>
         <td class="col-2" align="left">
-            {{reportrow.5}}
+            {{reportrow.5|floatformat:1}}
         </td>
 
         <td class="col-2" style="display:none;" align="left">
@@ -83,9 +94,54 @@
         <td class="col-2" align="left">
             {{reportrow.8}}
         </td>
+
+        
+    {%else%}
+    <!--<tr style="display:none;background-color: rgb(200, 200, 200); color: black; ">-->
+    <tr  style="display:none;background-color: rgb(200, 200, 200); color: black; font-size:small;">
+        <td class="col-3" align="right">
+
+            {% if reportrow.0 == "I" and reportrow.8 > 0 %}
+            <i id="{{reportrow.6}}" onclick="expand('rep','{{reportrow.6}}')" class="bi bi-file-plus"></i>
+            <a href="/boards/packages_index/{{reportrow.9}}/{{wz}}">{{reportrow.1}}</a>
+            {%else%}
+                BARCODE: {{reportrow.1}}
+                <br>
+                {%if reportrow.8 != "" %}
+                PACZKA: {{reportrow.8}}
+                {% endif %}
+            {%endif%}
+        </td>
+        <td class="col-3" colspan="3" align="center">
+                Dostawca: {{reportrow.2}}  <br>  Data dostawy: {{reportrow.3|date:'d-m-Y'}}  <br>  Lokalizacja:  {{reportrow.4}}
+        </td>
+
+        <td class="col-2" align="left">
+            {{reportrow.5}}
+        </td>
+        <td class="col-2" align="left">
+            1
+           
+        </td>
+        <td class="col-2" align="left" style="display:none;">
+        </td>
+
+        <td class="col-2" style="display:none;" align="left">
+            {{reportrow.6}}
+        </td>
+        <td class="col-2" style="display:none;" align="left"> 
+            {{reportrow.7}}
+        </td>
+        <td class="col-2" style="display:none;" align="left">
+            {{reportrow.0}}
+        </td>
+        <td class="col-2" align="left" style="display:none;">
+            {{reportrow.8}}
+        </td>
         
     </tr>
-    
+    {%endif%}
+
     </div>
     {% endfor %}
     </tbody>

@@ -1,0 +1,36 @@
+{% extends "boards/base.html" %}
+{% block body %}
+<div class = "container">
+    <table class="table table-bordered">
+        <thead>              
+            <tr>
+                <th>
+                STANY NA PRODUKCJI
+                <th>
+            </tr>
+            <tr>
+                <th>
+                    {{labels.index_name}}
+                </th>
+                <th>
+                    {{labels.package_length}}
+                </th>
+
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                
+            {%for stan in stany%} 
+            <td>
+            {{stan.index}}
+            </td>
+            <td>
+            {{stan.suma|floatformat:1}}
+            </td>
+            </tr>
+            {%endfor%}
+            </tbody>
+    </table>
+</div>
+{% endblock body %}
