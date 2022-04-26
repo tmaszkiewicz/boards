@@ -29,6 +29,16 @@ class Index(models.Model):
     def __str__(self):
         return "{} {}".format(self.sap,self.name)
 
+
+class DayQuantity(models.Model):
+    index = models.ForeignKey(Index,on_delete=models.CASCADE,null=True)
+    prd_qty = models.FloatField(blank=True,null=True)
+    mag_qty = models.FloatField(blank=True,null=True)
+    all_qty = models.FloatField(blank=True,null=True)
+    date = models.DateField(default=date.today)
+    def __str__(self):
+        return f"Stany na{self.date}"
+
 class Package(models.Model):
     # = models.CharField(max_length=12,blank=False,null=False,default="0")
     paczka = models.CharField(max_length=10,blank=True,null=True,default="")

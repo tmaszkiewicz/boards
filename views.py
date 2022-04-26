@@ -15,6 +15,7 @@ from django.db.models import Sum
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets
+
 from .models import IndexForm, Index, Supplier, PackageForm, Package
 from .models import PackageTrash, IndexForm, SupplierForm, CurrentUser, Log
 from .functions import create_log
@@ -48,6 +49,7 @@ LABELS = {
 
 
 }
+
 
 def stany_magazyn(request, *args, **kwargs):
     url='boards/stany_magazyn.html'
