@@ -32,12 +32,30 @@ class Index(models.Model):
 
 class DayQuantity(models.Model):
     index = models.ForeignKey(Index,on_delete=models.CASCADE,null=True)
+
+    # Stany na dzien
     prd_qty = models.FloatField(blank=True,null=True)
     mag_qty = models.FloatField(blank=True,null=True)
     all_qty = models.FloatField(blank=True,null=True)
+    #  przyjęto na magazyn
+    warehouse_package = models.FloatField(blank=True,null=True,default=0)
+    #poprawki przyjęć na magazyn
+    warehouse_package_update = models.FloatField(blank=True,null=True,default=0)
+    #wydano na produkcję
+    release_package = models.FloatField(blank=True,null=True,default=0) 
+    # aktualuizacja podczas produkcji  WPLYWA NA ZUZYCIE
+    update_length = models.FloatField(blank=True,null=True,default=0)
+    # zakończono po produkcji WPLYWA NA ZUZYCIE
+    close_package = models.FloatField(blank=True,null=True,default=0)
+    def utilisation4day(self):
+        return self.update_length+self.close_package
+
+    
+
     date = models.DateField(default=date.today)
+
     def __str__(self):
-        return f"Stany na{self.date}"
+        return f"{self.date} - {self.index}"
 
 class Package(models.Model):
     # = models.CharField(max_length=12,blank=False,null=False,default="0")

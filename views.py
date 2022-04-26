@@ -15,10 +15,11 @@ from django.db.models import Sum
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets
+import datetime
 
 from .models import IndexForm, Index, Supplier, PackageForm, Package
-from .models import PackageTrash, IndexForm, SupplierForm, CurrentUser, Log
-from .functions import create_log
+from .models import PackageTrash, IndexForm, SupplierForm, CurrentUser, Log, DayQuantity
+from .functions import create_log, update_utilisation
 from .serializers import IndexSerializer, SupplierSerializer, PackageSerializer
 from .forms import LoginForm
 
@@ -49,7 +50,44 @@ LABELS = {
 
 
 }
+def zuzycie(request, *args, **kwargs):
+    url='boards/zuzycie.html'
+    context = {}
+    current_date = datetime.date.today()
+    indexes = Index.objects.all()
+    dayQuantities = []
+    print(request.POST)
+    if request.method == "POST":
+        data_od = request.POST['data_od']
+        data_do = request.POST['data_do']
+        for index in indexes:
+            dq = {}
+            dayQuantity = DayQuantity.objects.filter(date__gte=data_od,date__lte=data_do,index=index)
+            sum_update_length = DayQuantity.objects.filter(date__gte=data_od,date__lte=data_do,index=index).aggregate(Sum('update_length'))
+            sum_close_package = DayQuantity.objects.filter(date__gte=data_od,date__lte=data_do,index=index).aggregate(Sum('close_package'))
+            sum_update_length_ = sum_update_length['update_length__sum'] if sum_update_length['update_length__sum'] != None else 0
+            sum_close_package_ = sum_close_package['close_package__sum'] if sum_close_package['close_package__sum'] != None else 0
+            utilisation4day = sum_update_length_ + sum_close_package_
+            dq['index'] = index
+            dq['utilisation4day'] = utilisation4day
+            dayQuantities.append(dq)
+        print(dayQuantities)
+    else:
+        for index in indexes:
+            dq = {}
+            dayQuantity = DayQuantity.objects.filter(date=current_date,index=index).first()
+            update_length = dayQuantity.update_length if dayQuantity.update_length!=None else 0
+            close_package = dayQuantity.close_package if dayQuantity.close_package!=None else 0
+            utilisation4day = update_length + close_package
+            dq['index'] = index
+            dq['utilisation4day'] = utilisation4day         
+            dayQuantities.append(dq)
 
+    context['data'] = current_date
+    context['labels'] = LABELS
+    context['dayQuantities'] = dayQuantities
+
+    return render(request,url,context)
 
 def stany_magazyn(request, *args, **kwargs):
     url='boards/stany_magazyn.html'
@@ -744,27 +782,35 @@ def scanner_load(request):
         except: 
             return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
     if typ == "warehouse_package":
-        try:
-            package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
-            supplier_pk = package.supplier.pk if package.supplier!=None else "0"
-            create_log(0,"", package.length,request.POST['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,supplier_pk,package.paczka,request.POST['paczka'])
-            package.localisation = "MAG"
-            package.length = request.POST['length']
-            package.paczka = request.POST['paczka']
-            package.save()
-            sap_str =(f"Paczka {request.POST['package']} wprowadzona na magazyn")
+        #try:
+        package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
+        supplier_pk = package.supplier.pk if package.supplier!=None else "0"
+        create_log(0,"", package.length,request.POST['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,supplier_pk,package.paczka,request.POST['paczka'])            
+        print(package.length,request.POST['length'])
+        update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
+        
+        
 
-        except: 
-            return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
+        package.localisation = "MAG"
+        package.length = request.POST['length']
+        package.paczka = request.POST['paczka']
+        package.save()
+        sap_str =(f"Paczka {request.POST['package']} wprowadzona na magazyn")
+
+        #except: 
+        #    return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
 
     if typ == "warehouse_package_update":
         try:
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
             supplier_pk = package.supplier.pk if package.supplier!=None else "0"
             create_log(4,"", package.length,request.POST['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,supplier_pk,package.paczka,request.POST['paczka'])
+            update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
             package.localisation = "MAG"
             package.length = request.POST['length']
             package.paczka = request.POST['paczka']
+            #package.paczka = request.POST['paczka'] if request.POST['paczka'].strip()!="" else package.paczka
+
             package.save()
             sap_str =(f"Paczka {request.POST['package']} zaktualizowana")
 
@@ -778,6 +824,7 @@ def scanner_load(request):
             supplier_pk = package.supplier.pk if package.supplier!=None else "0"
 
             create_log(1,"", package.length,request.POST['length'], package.localisation, "PRD", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+            update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
             package.localisation = "PRD"
             package.length = request.POST['length']
             package.save()
@@ -791,7 +838,10 @@ def scanner_load(request):
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
             supplier_pk = package.supplier.pk if package.supplier!=None else "0"
 
-            create_log(2,"", package.length,request.POST['length'], package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+            #create_log(2,"", package.length,request.POST['length'], package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+            create_log(2,"", package.length,0, package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+            update_utilisation(typ, package.length,0, package.index.pk)
+
             package.localisation = "CLOSED"
             package.length = 0 #request.POST['length']
             package.length_on_close = request.POST['length']
@@ -809,6 +859,7 @@ def scanner_load(request):
         supplier_pk = package.supplier.pk if package.supplier!=None else "0"
         if package.length != float(request.POST['length']) or (request.POST['paczka'].strip()!="" and package.paczka != request.POST['paczka']):
             create_log(4,"", package.length,request.POST['length'], package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+            update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
             package.length = request.POST['length']
             package.paczka = request.POST['paczka'] if request.POST['paczka'].strip()!="" else package.paczka
 
