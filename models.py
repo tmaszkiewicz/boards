@@ -47,6 +47,7 @@ class DayQuantity(models.Model):
     update_length = models.FloatField(blank=True,null=True,default=0)
     # zakończono po produkcji WPLYWA NA ZUZYCIE
     close_package = models.FloatField(blank=True,null=True,default=0)
+    
     def utilisation4day(self):
         return self.update_length+self.close_package
 
@@ -68,6 +69,7 @@ class Package(models.Model):
     localisation = models.CharField(max_length=15,blank=False,null=False)
     length = models.FloatField(default="0",blank=True,null=True)
     length_on_close = models.FloatField(default="0",blank=True,null=True)
+    length_initial_prd = models.FloatField(default="0",blank=True,null=True)
     wz = models.CharField(max_length=15,blank=True,null=True)
 
     #description = models.CharField(max_length=100,blank=True,null=True)
@@ -173,9 +175,20 @@ class Package(models.Model):
 
     def __str__(self):
         return "{}".format(self.index.name)
-class PackageTrash(Package):
-   def __str__(self):
+class PackageTrash(models.Model):
+    paczka = models.CharField(max_length=10,blank=True,null=True,default="")
+    index = models.ForeignKey(Index,on_delete=models.CASCADE,null=False)
+    delivery_date = models.DateField(default=date.today)
+    delivery_time = models.DateTimeField(auto_now=True)
+    supplier = models.ForeignKey(Supplier,on_delete=models.SET_NULL,null=True,blank=True) # .CharField(max_length=100,blank=True,null=True)
+    werk = models.CharField(max_length=10,blank=False,null=False,default="3000")
+    localisation = models.CharField(max_length=15,blank=False,null=False)
+    length = models.FloatField(default="0",blank=True,null=True)
+    length_on_close = models.FloatField(default="0",blank=True,null=True)
+    wz = models.CharField(max_length=15,blank=True,null=True)
+    def __str__(self):
         return "{}".format(self.index.name)
+        
 class CurrentUser(models.Model):
     userid = models.CharField(max_length=8,null=False)
     host = models.CharField(max_length=15,null=False)
@@ -183,6 +196,23 @@ class CurrentUser(models.Model):
     login_time = models.DateTimeField(auto_now=True)
     def __str__(self):
         return f"{self.userid}  {self.name} {self.host} {self.login_time}"
+
+class DeletedPackage(models.Model):
+    # = models.CharField(max_length=12,blank=False,null=False,default="0")
+    paczka = models.CharField(max_length=10,blank=True,null=True,default="")
+    index = models.ForeignKey(Index,on_delete=models.CASCADE,null=False)
+    delivery_date = models.DateField(default=date.today)
+    delivery_time = models.DateTimeField(auto_now=True)
+    supplier = models.ForeignKey(Supplier,on_delete=models.SET_NULL,null=True,blank=True) # .CharField(max_length=100,blank=True,null=True)
+    werk = models.CharField(max_length=10,blank=False,null=False,default="3000")
+    localisation = models.CharField(max_length=15,blank=False,null=False)
+    length = models.FloatField(default="0",blank=True,null=True)
+    length_on_close = models.FloatField(default="0",blank=True,null=True)
+    length_initial_prd = models.FloatField(default="0",blank=True,null=True)
+
+    wz = models.CharField(max_length=15,blank=True,null=True)
+    def __str__(self):
+        return "{}".format(self.index.name)
 
 
 class Log(models.Model):

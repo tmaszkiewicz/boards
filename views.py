@@ -18,8 +18,8 @@ from rest_framework import viewsets
 import datetime
 
 from .models import IndexForm, Index, Supplier, PackageForm, Package
-from .models import PackageTrash, IndexForm, SupplierForm, CurrentUser, Log, DayQuantity
-from .functions import create_log, update_utilisation
+from .models import IndexForm, SupplierForm, CurrentUser, Log, DayQuantity, DeletedPackage
+from .functions import create_log, update_utilisation, remove_slash, return_slash
 from .serializers import IndexSerializer, SupplierSerializer, PackageSerializer
 from .forms import LoginForm
 
@@ -351,14 +351,19 @@ def packages_filter(request, *args, **kwargs):
 @login_required(login_url='/boards/loginlocal/')
 def packages_delivery_edit(request, *args, **kwargs):
     url = 'boards/packages_delivery_edit.html'
+    wz = kwargs['wz']
+    wz = return_slash(wz)
+    print(wz)
 
-    
+
     if request.method == 'POST':
         packages = Package.objects.filter(wz=request.POST['wz']) if request.POST['wz']!="" else Package.objects.all()
     else:
 
         package_last=Package.objects.latest('id')
-        if package_last.wz!="" and package_last.wz!=None:
+        if wz!="0" and Package.objects.filter(wz=wz):
+            packages = Package.objects.filter(wz=wz)
+        elif package_last.wz!="" and package_last.wz!=None:
             packages = Package.objects.filter(wz=package_last.wz)
         else:
             packages = Package.objects.filter(delivery_date=package_last.delivery_date)
@@ -378,9 +383,14 @@ def packages_delivery_edit(request, *args, **kwargs):
 
 @login_required(login_url='/boards/loginlocal/')      
 def packages_edit(request, *args, **kwargs):
+    #wz = wz.replace("\\","QQQQ")
+    #wz = wz.replace("/","qqqq")
+
     url = 'boards/packages_edit.html'
     context = {}
     pk = kwargs['pk']
+    print(request.path_info)
+
     package = Package.objects.get(pk=pk)
     packageForm = PackageForm()
     packageForm.fields['delivery_date'].initial = package.delivery_date.isoformat()
@@ -401,26 +411,38 @@ def packages_edit(request, *args, **kwargs):
         package.length=request.POST['length']
         package.wz=request.POST['wz']
         package.save()
-        return HttpResponseRedirect("/boards/packages_delivery_edit/")
-
+        if "/boards/packages_edit2/" in request.path_info:
+            wz = remove_slash(request.POST['wz'])
+            return HttpResponseRedirect("/boards/packages_delivery_edit/"+wz)
+        else:
+            return HttpResponseRedirect("/boards/packages/")
 
     #else:
-
-        
         #packageForm = PackageForm()#instance = package
     context['PackageForm']=packageForm
     return render(request, url, context)
+    
 @login_required(login_url='/boards/loginlocal/')      
 def packages_del(request,*args,**kwargs):
     pk = kwargs['pk']
-    #### PackageThrash - NIe tworzy się
-    PackageTrash.objects.create(pk=pk,index=Package.objects.get(pk=pk).index,supplier=Package.objects.get(pk=pk).supplier,delivery_date=Package.objects.get(pk=pk).delivery_date,length=Package.objects.get(pk=pk).length,localisation=Package.objects.get(pk=pk).localisation)
+    print(request)
+    #### PackageThrash - NIe tworzy się - UTWORZYC NOWY MODEL POD THRASH
+    DeletedPackage.objects.create(pk=pk,index=Package.objects.get(pk=pk).index,supplier=Package.objects.get(pk=pk).supplier,delivery_date=Package.objects.get(pk=pk).delivery_date,length=Package.objects.get(pk=pk).length,localisation=Package.objects.get(pk=pk).localisation,wz=Package.objects.get(pk=pk).wz,length_initial_prd=Package.objects.get(pk=pk).length_initial_prd)
     Package.objects.get(pk=pk).delete()
 
     return HttpResponseRedirect("/boards/packages/")
+def packages_del_delivery(request,*args,**kwargs):
+    pk = kwargs['pk']
+    print(request)
+    #### PackageThrash - NIe tworzy się
+    DeletedPackage.objects.create(pk=pk,index=Package.objects.get(pk=pk).index,supplier=Package.objects.get(pk=pk).supplier,delivery_date=Package.objects.get(pk=pk).delivery_date,length=Package.objects.get(pk=pk).length,localisation=Package.objects.get(pk=pk).localisation,wz=Package.objects.get(pk=pk).wz,length_initial_prd=Package.objects.get(pk=pk).length_initial_prd)
+    wz = Package.objects.get(pk=pk).wz
+    wz = remove_slash(wz)
+    Package.objects.get(pk=pk).delete() ### - ODBLOKUJ!!!!
+
+
+    return HttpResponseRedirect("/boards/packages_delivery_edit/"+wz)
     
-
-
     
 @login_required(login_url='/boards/loginlocal/')      
 def suppliers_del(request, *args, **kwargs):
@@ -827,6 +849,8 @@ def scanner_load(request):
             update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
             package.localisation = "PRD"
             package.length = request.POST['length']
+            package.length_initial_prd = request.POST['length']
+
             package.save()
             sap_str =(f"Paczka {request.POST['package']} przekazana na produkcję")
 

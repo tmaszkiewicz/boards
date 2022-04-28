@@ -1,6 +1,19 @@
 import datetime
 from .models import Log,Index,Supplier,Package,DayQuantity
 
+def remove_slash(slug):
+    slug = slug.replace("\\","QQQQ") # CLUTCH SOLUTION
+    slug = slug.replace("/","qqqq")
+    return slug
+
+def return_slash(slug):
+    slug = slug.replace("QQQQ","\\") # CLUTCH SOLUTION
+    slug = slug.replace("qqqq","/")
+    return slug
+
+
+
+    return
 #def package_label(package):
 def delivery_print():
     print("test")
