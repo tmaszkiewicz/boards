@@ -68,6 +68,7 @@ class Package(models.Model):
     werk = models.CharField(max_length=10,blank=False,null=False,default="3000")
     localisation = models.CharField(max_length=15,blank=False,null=False)
     length = models.FloatField(default="0",blank=True,null=True)
+    length_correction = models.FloatField(default="0",blank=True,null=True)
     length_on_close = models.FloatField(default="0",blank=True,null=True)
     length_initial_prd = models.FloatField(default="0",blank=True,null=True)
     wz = models.CharField(max_length=15,blank=True,null=True)
@@ -207,6 +208,7 @@ class DeletedPackage(models.Model):
     werk = models.CharField(max_length=10,blank=False,null=False,default="3000")
     localisation = models.CharField(max_length=15,blank=False,null=False)
     length = models.FloatField(default="0",blank=True,null=True)
+    length_correction = models.FloatField(default="0",blank=True,null=True)
     length_on_close = models.FloatField(default="0",blank=True,null=True)
     length_initial_prd = models.FloatField(default="0",blank=True,null=True)
 
@@ -249,6 +251,26 @@ class Log(models.Model):
 
     def __str__(self):
         return f"{self.scanner} {self.operation} {self.time}"
+
+
+class LogInventory(models.Model):
+    inventory_name = models.CharField(max_length=25,null=True,blank=True)
+    package = models.ForeignKey(Package,on_delete=models.SET_NULL,null=True)
+    index = models.ForeignKey(Index,on_delete=models.SET_NULL,null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    scanner = models.CharField(max_length=15,null=True,blank=True)
+    userid = models.CharField(max_length=15,null=True,blank=True)
+    username = models.CharField(max_length=15,null=True,blank=True)
+    length_before = models.FloatField(blank=True,null=True)
+    length_after = models.FloatField(blank=True,null=True)    
+    localisation_before =  models.CharField(max_length=15,blank=True,null=True)
+    localisation_after =  models.CharField(max_length=15,blank=True,null=True)
+    paczka_before = models.CharField(max_length=10,blank=True,null=True,default="")
+    paczka_after = models.CharField(max_length=10,blank=True,null=True,default="")
+
+    def __str__(self):
+        return f"{self.inventory_name}"
+
 
 
 

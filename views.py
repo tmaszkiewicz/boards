@@ -755,7 +755,7 @@ def scanner_load(request):
     #for posts in poststream.split("|")[1:]:
     #    request_[posts.split("=")[0]]=posts.split("=")[1]
     #print(request_)
-    print("request",request.POST)
+    #print("request",request.POST)
     typ = request.POST['typ']
 
     username = request.POST['username'][:14]
@@ -858,44 +858,73 @@ def scanner_load(request):
             return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
 
     if typ == "close_package":
+#        print("aa")
+
         try:
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
-            supplier_pk = package.supplier.pk if package.supplier!=None else "0"
+            if float(request.POST['length']) <= package.length_initial_prd:
+                supplier_pk = package.supplier.pk if package.supplier!=None else "0"
 
-            #create_log(2,"", package.length,request.POST['length'], package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
-            create_log(2,"", package.length,0, package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
-            update_utilisation(typ, package.length,0, package.index.pk)
+                #create_log(2,"", package.length,request.POST['length'], package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+                create_log(2,"", package.length,0, package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+                update_utilisation(typ, package.length,0, package.index.pk)
 
-            package.localisation = "CLOSED"
-            package.length = 0 #request.POST['length']
-            package.length_on_close = request.POST['length']
+                package.localisation = "CLOSED"
+                package.length = 0 #request.POST['length']
+                package.length_on_close = request.POST['length']
 
-            package.save()
-            sap_str =(f"Paczka {request.POST['package']} została zakończona")
+                package.save()
+                sap_str =(f"Paczka {request.POST['package']} została zakończona")
+            else:
+                return HttpResponse(f"ZA DŁUGA!!!! NIE ZAMKNIĘTO!!! ZAMKNIJ PONOWNIE!!!!")
 
         except: 
             return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
 
     if typ == "update_length":
+        try:
+            print(request.POST)
+            package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
+            supplier_pk = package.supplier.pk if package.supplier!=None else "0"
+            if package.length != float(request.POST['length']) or (request.POST['paczka'].strip()!="" and package.paczka != request.POST['paczka']):
+                create_log(4,"", package.length,request.POST['length'], package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+                update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
+                package.length = request.POST['length']
+                package.paczka = request.POST['paczka'] if request.POST['paczka'].strip()!="" else package.paczka
+
+                package.save()
+                sap_str =(f"Paczka {request.POST['package']} ZOSTAŁA ZMODYFIKOWANA")
+            else:
+                sap_str =(f"Dlugość paczki {request.POST['package']} NIE ULEGŁA ZMIANIE")
+
+
+
+        except: 
+            return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
+
+    if typ == "update_correction":
         #try:
-        print(request.POST)
         package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
-        supplier_pk = package.supplier.pk if package.supplier!=None else "0"
-        if package.length != float(request.POST['length']) or (request.POST['paczka'].strip()!="" and package.paczka != request.POST['paczka']):
-            create_log(4,"", package.length,request.POST['length'], package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
-            update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
-            package.length = request.POST['length']
-            package.paczka = request.POST['paczka'] if request.POST['paczka'].strip()!="" else package.paczka
+        #supplier_pk = package.supplier.pk if package.supplier!=None else "0"
+
+        if package.length_correction != float(request.POST['length_correction']):
+
+            ##Dodajemy log z dla korekty
+            create_log(6,"", package.length,package.length, package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka,package.length_correction, request.POST['length_correcion']) 
+            ## Korekta będzie doliczana na etapie zamknięcia belki.
+            #update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
+            package.length_correction = request.POST['length_correction'] ###correction
 
             package.save()
-            sap_str =(f"Paczka {request.POST['package']} ZOSTAŁA ZMODYFIKOWANA")
+            sap_str =(f"Korekta paczki {request.POST['package']}  ZMODYFIKOWANA")
         else:
-            sap_str =(f"Dlugość paczki {request.POST['package']} NIE ULEGŁA ZMIANIE")
+            sap_str =(f"Korekta paczki {request.POST['package']} NIE ULEGŁA ZMIANIE!!!")
 
 
 
         #except: 
         #    return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
+
 
 
     if typ == "edit_delivery":
