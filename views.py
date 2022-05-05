@@ -17,9 +17,9 @@ from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets
 import datetime
 
-from .models import IndexForm, Index, Supplier, PackageForm, Package
+from .models import IndexForm, Index, Supplier, PackageForm, Package, LogInventory,inventory
 from .models import IndexForm, SupplierForm, CurrentUser, Log, DayQuantity, DeletedPackage
-from .functions import create_log, update_utilisation, remove_slash, return_slash
+from .functions import create_log, update_utilisation, remove_slash, return_slash, create_LogInventory
 from .serializers import IndexSerializer, SupplierSerializer, PackageSerializer
 from .forms import LoginForm
 
@@ -239,7 +239,7 @@ def packages_delivery(request, *args, **kwargs):
             package = Package.objects.create(index=index,supplier=supplier,delivery_date=request.POST['delivery_date'],localisation='DOST',wz=request.POST['wz'])
             package.create_label_large(True,LABELS,False) if 'print' in request.POST.keys()  else package.create_label_large(False,LABELS,False)
             try:
-                create_log(5,"", package.length,package.length, package.localisation, package.localisation, package.delivery_date, package.delivery_date, request.user , "PC",package.index.pk,package.pk,supplier.pk,package.paczka,package.paczka)
+                create_log(5,"", package.length,package.length, package.localisation, package.localisation, package.delivery_date, package.delivery_date, request.user , "PC",package.index.pk,package.pk,supplier.pk,package.paczka,package.paczka,package.length_correction,package.length_correction)
             except  Exception as e:
                 print(f"Nie utworzono loga {e}")
 
@@ -788,7 +788,7 @@ def scanner_load(request):
 
                 package = Package.objects.create(index=index,supplier=supplier,delivery_date=request.POST['delivery_date'],localisation='MAG',length=length)
                 supplier_pk = package.supplier.pk if package.supplier!=None else "0"
-                create_log(0,"", package.length,package.length, package.localisation, "MAG", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk)
+                create_log(0,"", package.length,package.length, package.localisation, "MAG", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.length_correction,package.length_correction)
                 package.create_label()
             sap_str = f"utworzono {request.POST['qty']} paczek/paczki {request.POST['index']}"
         except:
@@ -799,7 +799,7 @@ def scanner_load(request):
         try:
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
             supplier = package.supplier.name if package.supplier!=None else ""
-            t = (package.index.name,supplier,str(package.length),str(package.delivery_date),package.localisation,str(package.pk),package.paczka)
+            t = (package.index.name,supplier,str(package.length),str(package.delivery_date),package.localisation,str(package.pk),package.paczka,str(package.length_correction))
             sap_str = "|".join(t)
         except: 
             return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
@@ -807,7 +807,7 @@ def scanner_load(request):
         #try:
         package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
         supplier_pk = package.supplier.pk if package.supplier!=None else "0"
-        create_log(0,"", package.length,request.POST['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,supplier_pk,package.paczka,request.POST['paczka'])            
+        create_log(0,"", package.length,request.POST['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,supplier_pk,package.paczka,request.POST['paczka'],package.length_correction,package.length_correction)            
         print(package.length,request.POST['length'])
         update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
         
@@ -826,7 +826,7 @@ def scanner_load(request):
         try:
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
             supplier_pk = package.supplier.pk if package.supplier!=None else "0"
-            create_log(4,"", package.length,request.POST['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,supplier_pk,package.paczka,request.POST['paczka'])
+            create_log(4,"", package.length,request.POST['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,supplier_pk,package.paczka,request.POST['paczka'],package.length_correction,package.length_correction)
             update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
             package.localisation = "MAG"
             package.length = request.POST['length']
@@ -845,7 +845,7 @@ def scanner_load(request):
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
             supplier_pk = package.supplier.pk if package.supplier!=None else "0"
 
-            create_log(1,"", package.length,request.POST['length'], package.localisation, "PRD", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+            create_log(1,"", package.length,request.POST['length'], package.localisation, "PRD", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka,package.length_correction,package.length_correction)
             update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
             package.localisation = "PRD"
             package.length = request.POST['length']
@@ -866,7 +866,7 @@ def scanner_load(request):
                 supplier_pk = package.supplier.pk if package.supplier!=None else "0"
 
                 #create_log(2,"", package.length,request.POST['length'], package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
-                create_log(2,"", package.length,0, package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+                create_log(2,"", package.length,0, package.localisation, "CLOSED", package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka,package.length_correction,package.length_correction)
                 update_utilisation(typ, package.length,0, package.index.pk)
 
                 package.localisation = "CLOSED"
@@ -887,7 +887,7 @@ def scanner_load(request):
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
             supplier_pk = package.supplier.pk if package.supplier!=None else "0"
             if package.length != float(request.POST['length']) or (request.POST['paczka'].strip()!="" and package.paczka != request.POST['paczka']):
-                create_log(4,"", package.length,request.POST['length'], package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+                create_log(4,"", package.length,request.POST['length'], package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka,package.length_correction,package.length_correction)
                 update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
                 package.length = request.POST['length']
                 package.paczka = request.POST['paczka'] if request.POST['paczka'].strip()!="" else package.paczka
@@ -903,28 +903,50 @@ def scanner_load(request):
             return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
 
     if typ == "update_correction":
-        #try:
-        package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
-        #supplier_pk = package.supplier.pk if package.supplier!=None else "0"
+        try:
+            package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
+            supplier_pk = package.supplier.pk if package.supplier!=None else "0"
+            print(request.POST['length_correction'])
 
-        if package.length_correction != float(request.POST['length_correction']):
+            if package.length_correction != float(request.POST['length_correction']):
 
-            ##Dodajemy log z dla korekty
-            create_log(6,"", package.length,package.length, package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka,package.length_correction, request.POST['length_correcion']) 
-            ## Korekta będzie doliczana na etapie zamknięcia belki.
-            #update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
-            package.length_correction = request.POST['length_correction'] ###correction
+                ##Dodajemy log z dla korekty
+                create_log(6,"", package.length,package.length, package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka, package.length_correction, request.POST['length_correction']) 
+                ## Korekta będzie doliczana na etapie zamknięcia belki.
+                #update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
+                package.length_correction = request.POST['length_correction'] ###correction
 
+                package.save()
+                sap_str =(f"Korekta paczki {request.POST['package']}  ZMODYFIKOWANA")
+            else:
+                sap_str =(f"Korekta paczki {request.POST['package']} NIE ULEGŁA ZMIANIE!!!")
+        except: 
+            return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
+
+    if typ == "inventory":
+            package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
+            index = package.index
+            supplier_pk = package.supplier.pk if package.supplier!=None else "0"
+            inv = inventory.objects.get(name="INWENTURA")
+            print(request.POST['length'])
+            create_LogInventory(name = "INWENTURA", 
+                                inv_pk = inv.pk,
+                                package_pk = package.pk,
+                                index_pk = index.pk,
+                                scanner = scanner,
+                                userid = "",
+                                username = username,
+                                length_before = package.length,
+                                length_after = request.POST['length'],
+                                localisation_before = package.localisation,
+                                localisation_after = package.localisation, 
+                                paczka_before = package.paczka, 
+                                paczka_after = package.paczka)
+            create_log(7,"", package.length,request.POST['length'], package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka,package.length_correction,package.length_correction)
+            package.length = request.POST['length']
+            package.inventoried = True
             package.save()
-            sap_str =(f"Korekta paczki {request.POST['package']}  ZMODYFIKOWANA")
-        else:
-            sap_str =(f"Korekta paczki {request.POST['package']} NIE ULEGŁA ZMIANIE!!!")
-
-
-
-        #except: 
-        #    return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
-
+            return HttpResponse(f"Zinwentaryzowano {request.POST['package']}")
 
 
     if typ == "edit_delivery":
@@ -939,8 +961,7 @@ def scanner_load(request):
         try:
             package = Package.objects.get(pk=request.POST['package'])
             supplier_pk = package.supplier.pk if package.supplier!=None else "0"
-
-            create_log(3,"", package.length,length, package.localisation, request.POST['localisation'], package.delivery_date, request.POST['delivery_date'],username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka)
+            create_log(3,"", package.length,length, package.localisation, request.POST['localisation'], package.delivery_date, request.POST['delivery_date'],username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka,package.length_correction,package.length_correction)
 
             package.index=index
             package.supplier=supplier
@@ -1007,7 +1028,7 @@ def scanner_load3_read_package(request,*args,**kwargs):
 def scanner_load3_warehouse_package(request,*args,**kwargs):
     try:
         package = Package.objects.get(pk=kwargs['pk'].lstrip("0"))
-        create_log(0,"", package.length,kwargs['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date,package.paczka,package.paczka)
+        create_log(0,"", package.length,kwargs['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date,package.paczka,package.paczka, package.length_correction,package.length_correction)
         package.localisation = "MAG"
         package.length = kwargs['length'].lstrip('0')
         package.save()
@@ -1020,7 +1041,7 @@ def scanner_load3_warehouse_package(request,*args,**kwargs):
 def scanner_load3_prd_package(request,*args,**kwargs):
     try:
         package = Package.objects.get(pk=kwargs['pk'].lstrip("0"))
-        create_log(0,"", package.length,kwargs['length'], package.localisation, "PRD", package.delivery_date, package.delivery_date,package.paczka,package.paczka)
+        create_log(0,"", package.length,kwargs['length'], package.localisation, "PRD", package.delivery_date, package.delivery_date,package.paczka,package.paczka,package.length_correction,package.length_correction)
         package.localisation = "PRD"
         package.length = kwargs['length'].lstrip('0')
         package.save()
@@ -1033,7 +1054,7 @@ def scanner_load3_prd_package(request,*args,**kwargs):
 def scanner_load3_closed_package(request,*args,**kwargs):
     try:
         package = Package.objects.get(pk=kwargs['pk'].lstrip("0"))
-        create_log(0,"", package.length,kwargs['length'], package.localisation, "CLOSED", package.delivery_date, package.delivery_date,package.paczka,package.paczka)
+        create_log(0,"", package.length,kwargs['length'], package.localisation, "CLOSED", package.delivery_date, package.delivery_date,package.paczka,package.paczka,package.length_correction,package.length_correction)
         package.localisation = "CLOSED"
         package.length = kwargs['length'].lstrip('0')
         package.save()
@@ -1060,3 +1081,38 @@ def scanner_load3_logout(request,*args,**kwargs):
     except:
         sap_str="Logout ERROR"
     return HttpResponse(sap_str)
+def inventory_rep(request, *args, **kwargs):
+    url='boards/inventory_rep.html'
+    context = {}
+    inventories = inventory.objects.all()
+    if request.method == 'POST':
+        if request.POST['locs'] == "WSZYSTKIE":
+            print("LOL",request.POST['inventories'])
+            logInventories = LogInventory.objects.filter(inventory_name=request.POST['inventories']).exclude(localisation_after="DOST").exclude(localisation_after="CLOSED")
+        elif request.POST['locs'] == "MAG":
+            logInventories = LogInventory.objects.filter(inventory_name=request.POST['inventories'],localisation_after="MAG")
+        elif request.POST['locs'] == "PRD":
+            logInventories = LogInventory.objects.filter(inventory_name=request.POST['inventories'],localisation_after="PRD")
+
+    else:
+        logInventories = LogInventory.objects.filter(inventory_name="INWENTURA")
+    rows = []
+    for index in Index.objects.all():
+        row = {}
+        row['index']  = index
+        row['package_qty'] = logInventories.filter(index=index).count()
+        row['package_length'] = logInventories.filter(index=index).aggregate(Sum('length_after'))
+        rows.append(row)
+        for package in logInventories.filter(index=index):
+            row = {}
+            row['package'] =  package.package
+            row['length_after'] =  package.length_after
+            rows.append(row)
+
+
+    locs = ("WSZYSTKIE","MAG","PRD")
+    context['locs'] = locs
+    context['rows'] = rows
+    context['inventories'] = inventories
+    context['logInventories']=logInventories
+    return render(request,url,context)

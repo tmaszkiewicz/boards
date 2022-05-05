@@ -11,6 +11,11 @@ from django.http import HttpResponse
 
 # Create your models here.
 
+class inventory(models.Model):
+    name = models.CharField(max_length=100,blank=False,null=False)
+    inventory_date = models.DateField(default=date.today)
+
+
 class Supplier(models.Model):    
     name = models.CharField(max_length=150,blank=False,null=False)
     def __repr__(self):
@@ -72,6 +77,8 @@ class Package(models.Model):
     length_on_close = models.FloatField(default="0",blank=True,null=True)
     length_initial_prd = models.FloatField(default="0",blank=True,null=True)
     wz = models.CharField(max_length=15,blank=True,null=True)
+    inventoried = models.NullBooleanField(default=False, blank=True,null=True)
+
 
     #description = models.CharField(max_length=100,blank=True,null=True)
     @property
@@ -175,7 +182,7 @@ class Package(models.Model):
 
 
     def __str__(self):
-        return "{}".format(self.index.name)
+        return "{} {} {}".format(self.pk, self.index.name, self.length_on_close) 
 class PackageTrash(models.Model):
     paczka = models.CharField(max_length=10,blank=True,null=True,default="")
     index = models.ForeignKey(Index,on_delete=models.CASCADE,null=False)
@@ -211,8 +218,9 @@ class DeletedPackage(models.Model):
     length_correction = models.FloatField(default="0",blank=True,null=True)
     length_on_close = models.FloatField(default="0",blank=True,null=True)
     length_initial_prd = models.FloatField(default="0",blank=True,null=True)
-
     wz = models.CharField(max_length=15,blank=True,null=True)
+    inventoried = models.NullBooleanField(default=False, blank=True,null=True)
+
     def __str__(self):
         return "{}".format(self.index.name)
 
@@ -225,6 +233,8 @@ class Log(models.Model):
         (3,'EDIT'),
         (4,'UPDATE'),
         (5,'DELIVERED'),
+        (6,'LENGTH_COR'),
+        (7,'INVENTORY'),
     )
     package = models.ForeignKey(Package,on_delete=models.SET_NULL,null=True)
     index_before = models.ForeignKey(Index,on_delete=models.SET_NULL,null=True,related_name="index_before")
@@ -240,6 +250,9 @@ class Log(models.Model):
     username = models.CharField(max_length=15,null=True,blank=True)
     length_before = models.FloatField(blank=True,null=True)
     length_after = models.FloatField(blank=True,null=True)
+    length_correction_before = models.FloatField(blank=True,null=True)
+    length_correction_after = models.FloatField(blank=True,null=True)
+
     localisation_before =  models.CharField(max_length=15,blank=True,null=True)
     localisation_after =  models.CharField(max_length=15,blank=True,null=True)
     delivery_date_before = models.DateField()
@@ -255,6 +268,7 @@ class Log(models.Model):
 
 class LogInventory(models.Model):
     inventory_name = models.CharField(max_length=25,null=True,blank=True)
+    inventory = models.ForeignKey(inventory,on_delete=models.SET_NULL,null=True)
     package = models.ForeignKey(Package,on_delete=models.SET_NULL,null=True)
     index = models.ForeignKey(Index,on_delete=models.SET_NULL,null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -267,6 +281,7 @@ class LogInventory(models.Model):
     localisation_after =  models.CharField(max_length=15,blank=True,null=True)
     paczka_before = models.CharField(max_length=10,blank=True,null=True,default="")
     paczka_after = models.CharField(max_length=10,blank=True,null=True,default="")
+
 
     def __str__(self):
         return f"{self.inventory_name}"

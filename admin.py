@@ -1,6 +1,7 @@
 from atexit import register
 from django.contrib import admin
-from .models import Index,Supplier,Package,Log,CurrentUser,DayQuantity, DeletedPackage,LogInventory
+from .models import Index,Supplier,Package,Log,CurrentUser,DayQuantity, DeletedPackage,LogInventory,inventory
+
 
 class LogInventoryAdmin(admin.ModelAdmin):
     search_fields = ['pk','inventory_name']
@@ -20,6 +21,7 @@ admin.site.register(Log)
 admin.site.register(LogInventory,LogInventoryAdmin)
 admin.site.register(CurrentUser)
 admin.site.register(DayQuantity)
+admin.site.register(inventory)
 
 
 

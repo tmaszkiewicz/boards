@@ -55,6 +55,25 @@
                 <div class="dropdown-divider"></div>
               </div>
             </li>
+            {% if user.get_username == "tmaszkiewicz" %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">INWENTURA</a>
+              <div class="dropdown-menu">
+
+                <a class="dropdown-item" href="/boards/inventory_rep/">Raport inwentaryzacji</a>
+                <a class="dropdown-item" href="/boards/inventory_move/">Usuń niezinwentaryzowane</a>
+                <a class="dropdown-item" href="/boards/inventory_move/">Dodaj inwenturę archiwalną</a>
+                <a class="dropdown-item" href="/boards/inventory_move/">Archiwizuj inwenturę</a>
+
+
+
+
+                <div class="dropdown-divider"></div>
+              </div>
+            </li>
+            
+            {%endif%}
+
 
 
           </ul>
@@ -78,6 +97,10 @@
                 <div class="dropdown-divider"></div>
               </div>
             </li>
+            {% if user.get_username == "tmaszkiewicz" %}
+
+            {%endif%}
+
             <li class="nav-item">
                 {% if user.get_username != "" %}
                 <a class="nav-link" href="/boards/logoutlocal/">WYLOGUJ: {{user.get_username}}</a>

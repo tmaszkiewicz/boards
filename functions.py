@@ -1,5 +1,5 @@
 import datetime
-from .models import Log,Index,Supplier,Package,DayQuantity
+from .models import Log,Index,Supplier,Package,DayQuantity,LogInventory,inventory
 
 def remove_slash(slug):
     slug = slug.replace("\\","QQQQ") # CLUTCH SOLUTION
@@ -18,7 +18,36 @@ def return_slash(slug):
 def delivery_print():
     print("test")
     pass
-def create_log(operation, userid, length_before,length_after,localisation_before,localisation_after,delivery_date_before,delivery_date_after,username,scanner,index_pk,package_pk,supplier_pk,paczka_before,paczka_after):
+def create_LogInventory(name, inv_pk, package_pk,index_pk,scanner,userid,username,length_before,length_after,localisation_before,localisation_after, paczka_before, paczka_after):
+    logInventory = LogInventory()
+    LogInventory.objects.get_or_create(
+        inventory_name = name,
+        inventory = inventory.objects.get(pk=inv_pk),
+        package = Package.objects.get(pk=package_pk),
+        index = Index.objects.get(pk=index_pk)
+        )
+    logInventory = LogInventory.objects.get(
+        inventory_name = name,
+        package = Package.objects.get(pk=package_pk),
+        index = Index.objects.get(pk=index_pk)
+    )
+    #logInventory.inventory_name = name
+    #logInventory.package = Package.objects.get(pk=package_pk)
+    #logInventory.index = Index.objects.get(pk=index_pk)
+    logInventory.scanner = scanner
+    logInventory.userid = userid
+    logInventory.username = username
+    logInventory.length_before = length_before
+    logInventory.length_after = length_after
+    logInventory.localisation_before = localisation_before
+    logInventory.localisation_after = localisation_after
+    logInventory.paczka_before = paczka_before
+    logInventory.paczka_after = paczka_after
+    logInventory.save()
+    return("OK")
+
+
+def create_log(operation, userid, length_before,length_after,localisation_before,localisation_after,delivery_date_before,delivery_date_after,username,scanner,index_pk,package_pk,supplier_pk,paczka_before,paczka_after,length_correction_before,length_correction_after):
     #try:
     log = Log()
     log.index_before=Index.objects.get(pk=index_pk) 
@@ -32,6 +61,8 @@ def create_log(operation, userid, length_before,length_after,localisation_before
     log.username = username
     log.length_before = length_before
     log.length_after = length_after
+    log.length_correction_before = length_correction_before
+    log.length_correction_after = length_correction_after
     log.localisation_before = localisation_before
     log.localisation_after = localisation_after
     log.delivery_date_before = delivery_date_before
