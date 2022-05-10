@@ -64,6 +64,7 @@ urlpatterns = [
     path('stany_magazyn/',views.stany_magazyn,name='stany_magazyn'),
     path('stany_lacznie/',views.stany_lacznie,name='stany_lacznie'),
     path('zuzycie/',views.zuzycie,name='zuzycie'),
+    path('zuzycie_log/',views.zuzycie_log,name='zuzycie_log'),
     path('inventory_rep/',views.inventory_rep,name='inventory_rep'),
 
     path('scanner/load3/read_package/<str:pk>', views.scanner_load3_read_package,name='scanner_load3_read_package'),

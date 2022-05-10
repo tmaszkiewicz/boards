@@ -1,4 +1,5 @@
 from ast import Index
+from math import lgamma
 from pdb import post_mortem
 import re
 from socket import PACKET_LOOPBACK
@@ -10,12 +11,13 @@ from venv import create
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
-from  datetime import date
+from  datetime import date, timedelta
 from django.db.models import Sum
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets
 import datetime
+
 
 from .models import IndexForm, Index, Supplier, PackageForm, Package, LogInventory,inventory
 from .models import IndexForm, SupplierForm, CurrentUser, Log, DayQuantity, DeletedPackage
@@ -88,6 +90,132 @@ def zuzycie(request, *args, **kwargs):
     context['dayQuantities'] = dayQuantities
 
     return render(request,url,context)
+
+def zuzycie_log(request, *args, **kwargs):
+    url='boards/zuzycie_log.html'
+    context = {}
+    current_date = datetime.date.today()# +timedelta(days = 1)
+    print(current_date)
+    indexes = Index.objects.all()
+    dayQuantities = []
+    print(request.POST)
+
+    rowid=0
+    if request.method == "POST":
+        data_od = request.POST['data_od']
+        data_do = request.POST['data_do']
+        data_do_ = datetime.datetime.strptime(data_do, '%Y-%m-%d')+timedelta(days = 1)
+        print(data_do_)
+        
+        for index in indexes:
+            rowid +=1
+            dq = {}
+
+            log = Log.objects.filter(index_before=index, localisation_before="PRD",time__gte=data_od,time__lte=data_do_).exclude(localisation_after="MAG").exclude(localisation_after="DOST")
+            sum_length_before = log.aggregate(Sum('length_before'))['length_before__sum'] if log.aggregate(Sum('length_before'))['length_before__sum'] != None else 0
+            sum_length_after = log.aggregate(Sum('length_after'))['length_after__sum'] if log.aggregate(Sum('length_after'))['length_after__sum'] != None else 0
+
+
+            utilisation4day = sum_length_before - sum_length_after
+            packages = set()
+            for l in log:                
+                packages.add(l.package)
+
+            sum_length_correction = 0
+            for package in packages:
+                rowid+=1
+                sum_length_correction += package.length_correction
+
+            dq['rowtype'] = "HEADER"
+            dq['index'] = index
+            dq['utilisation4day'] = utilisation4day
+            dq['sum_length_correction'] = sum_length_correction
+            dq['rowid'] = rowid
+            dq['packages_cnt']=len(packages)
+            dayQuantities.append(dq)
+
+            for package in packages:
+                dq = {}
+                #rowid +=1
+
+                logP = log.filter(package=package)
+                sum_length_beforeP = logP.aggregate(Sum('length_before'))['length_before__sum'] if logP.aggregate(Sum('length_before'))['length_before__sum'] != None else 0
+                sum_length_afterP = logP.aggregate(Sum('length_after'))['length_after__sum'] if logP.aggregate(Sum('length_after'))['length_after__sum'] != None else 0
+                utilisation4dayP = sum_length_beforeP - sum_length_afterP
+                print(sum_length_beforeP, sum_length_afterP, utilisation4dayP)
+
+                dq['rowtype'] = "ROW"
+                dq['package_pk'] = package.pk
+                dq['package_name'] = package.paczka
+                dq['package_length'] = package.length
+                dq['index'] = index
+                dq['utilisation4dayP'] = utilisation4dayP
+                dq['package_length_correction']=package.length_correction
+                dq['rowid'] = rowid
+                dq['packages_cnt']=0
+
+                dayQuantities.append(dq)
+
+    else:
+        #from datetime import date
+        #from datetime import datetime
+
+        #dt = datetime.datetime.combine(current_date, datetime.datetime.min.time())
+
+        for index in indexes:
+            rowid +=1            
+            print(current_date)
+            dq = {}
+            log = Log.objects.filter(index_before=index, localisation_before="PRD",time__gte=current_date).exclude(localisation_after="MAG").exclude(localisation_after="DOST")
+            sum_length_before = log.aggregate(Sum('length_before'))['length_before__sum'] if log.aggregate(Sum('length_before'))['length_before__sum'] != None else 0
+            sum_length_after = log.aggregate(Sum('length_after'))['length_after__sum'] if log.aggregate(Sum('length_after'))['length_after__sum'] != None else 0
+
+            #dayQuantity = DayQuantity.objects.filter(date=current_date,index=index).first()
+            #update_length = dayQuantity.update_length if dayQuantity.update_length!=None else 0
+            #close_package = dayQuantity.close_package if dayQuantity.close_package!=None else 0
+            #utilisation4day = update_length + close_package
+            utilisation4day = sum_length_before - sum_length_after
+            packages = set()
+            for l in log:                
+                packages.add(l.package)
+
+            sum_length_correction = 0
+            for package in packages:
+                rowid+=1
+                sum_length_correction += package.length_correction
+
+            dq['rowtype'] = "HEADER"
+            dq['index'] = index
+            dq['utilisation4day'] = utilisation4day
+            dq['sum_length_correction'] = sum_length_correction
+            dq['rowid'] = rowid
+            dq['packages_cnt']=len(packages)
+
+            dayQuantities.append(dq)
+            for package in packages:
+                dq = {}
+                logP = log.filter(package=package)
+                sum_length_beforeP = logP.aggregate(Sum('length_before'))['length_before__sum'] if logP.aggregate(Sum('length_before'))['length_before__sum'] != None else 0
+                sum_length_afterP = logP.aggregate(Sum('length_after'))['length_after__sum'] if logP.aggregate(Sum('length_after'))['length_after__sum'] != None else 0
+                utilisation4dayP = sum_length_beforeP - sum_length_afterP
+                print(sum_length_beforeP, sum_length_afterP, utilisation4dayP)
+                dq['rowtype'] = "ROW"
+                dq['package_pk'] = package.pk
+                dq['package_name'] = package.paczka
+                dq['package_length'] = package.length
+                dq['index'] = index
+                dq['utilisation4dayP'] = utilisation4dayP
+                dq['package_length_correction']=package.length_correction
+                dq['rowid'] = rowid
+                dq['packages_cnt']=0
+                dayQuantities.append(dq)
+
+    context['data'] = current_date
+    context['labels'] = LABELS
+    context['dayQuantities'] = dayQuantities
+
+    return render(request,url,context)
+
 
 def stany_magazyn(request, *args, **kwargs):
     url='boards/stany_magazyn.html'
@@ -885,17 +1013,22 @@ def scanner_load(request):
         try:
             print(request.POST)
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
-            supplier_pk = package.supplier.pk if package.supplier!=None else "0"
-            if package.length != float(request.POST['length']) or (request.POST['paczka'].strip()!="" and package.paczka != request.POST['paczka']):
-                create_log(4,"", package.length,request.POST['length'], package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka,package.length_correction,package.length_correction)
-                update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
-                package.length = request.POST['length']
-                package.paczka = request.POST['paczka'] if request.POST['paczka'].strip()!="" else package.paczka
+            if float(request.POST['length']) <= package.length_initial_prd:
 
-                package.save()
-                sap_str =(f"Paczka {request.POST['package']} ZOSTAŁA ZMODYFIKOWANA")
+                supplier_pk = package.supplier.pk if package.supplier!=None else "0"
+                
+                if package.length != float(request.POST['length']) or (request.POST['paczka'].strip()!="" and package.paczka != request.POST['paczka']):
+                    create_log(4,"", package.length,request.POST['length'], package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka,package.length_correction,package.length_correction)
+                    update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
+                    package.length = request.POST['length']
+                    package.paczka = request.POST['paczka'] if request.POST['paczka'].strip()!="" else package.paczka
+
+                    package.save()
+                    sap_str =(f"Paczka {request.POST['package']} ZOSTAŁA ZMODYFIKOWANA")
+                else:
+                    sap_str =(f"Dlugość paczki {request.POST['package']} NIE ULEGŁA ZMIANIE")
             else:
-                sap_str =(f"Dlugość paczki {request.POST['package']} NIE ULEGŁA ZMIANIE")
+                return HttpResponse(f"ZA DŁUGA!!!! NIE ZAMKNIĘTO!!! ZAMKNIJ PONOWNIE!!!!")
 
 
 
@@ -905,21 +1038,24 @@ def scanner_load(request):
     if typ == "update_correction":
         try:
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
-            supplier_pk = package.supplier.pk if package.supplier!=None else "0"
-            print(request.POST['length_correction'])
+            if float(request.POST['length_correction']) <= package.length_initial_prd:
+                supplier_pk = package.supplier.pk if package.supplier!=None else "0"
 
-            if package.length_correction != float(request.POST['length_correction']):
+                if package.length_correction != float(request.POST['length_correction']):
 
-                ##Dodajemy log z dla korekty
-                create_log(6,"", package.length,package.length, package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka, package.length_correction, request.POST['length_correction']) 
-                ## Korekta będzie doliczana na etapie zamknięcia belki.
-                #update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
-                package.length_correction = request.POST['length_correction'] ###correction
+                    ##Dodajemy log z dla korekty
+                    create_log(6,"", package.length,package.length, package.localisation, package.localisation, package.delivery_date, package.delivery_date,username,scanner,package.index.pk,package.pk,supplier_pk,package.paczka,package.paczka, package.length_correction, request.POST['length_correction']) 
+                    ## Korekta będzie doliczana na etapie zamknięcia belki.
+                    #update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
+                    package.length_correction = request.POST['length_correction'] ###correction
 
-                package.save()
-                sap_str =(f"Korekta paczki {request.POST['package']}  ZMODYFIKOWANA")
+                    package.save()
+                    sap_str =(f"Korekta paczki {request.POST['package']}  ZMODYFIKOWANA")
+                else:
+                    sap_str =(f"Korekta paczki {request.POST['package']} NIE ULEGŁA ZMIANIE!!!")
             else:
-                sap_str =(f"Korekta paczki {request.POST['package']} NIE ULEGŁA ZMIANIE!!!")
+                return HttpResponse(f"ZA DUŻA KOREKTA!!!! NIE WPROWADZONO!!! ZAMKNIJ PONOWNIE!!!!")
+
         except: 
             return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
 

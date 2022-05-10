@@ -41,6 +41,7 @@
                 <a class="dropdown-item" href="/boards/suppliers_report/">Podsumowania dostawcami</a>
                 <a class="dropdown-item" href="/boards/packages_filter">Paczki</a>
                 <a class="dropdown-item" href="/boards/zuzycie/">Zużycie</a>
+                <a class="dropdown-item" href="/boards/zuzycie_log/">Zużycie transakcjami(TESTY!!!)</a>
 
                 <div class="dropdown-divider"></div>
               </div>
@@ -196,6 +197,30 @@ function expand(tableId,rowId) {
         }
     }
 }
+
+function expand_zuzycia(tableId,rowId) {  
+
+  var rowCnt = document.getElementById(tableId).getElementsByTagName("tr").length;
+
+  console.log("ilosc wierszy:",rowCnt);
+  for (row = 2 ; row < rowCnt ; row++) 
+    {
+      console.log(rowId);
+      console.log("rowid", document.getElementById(tableId).getElementsByTagName("tr")[row].getElementsByTagName("td")[3].innerText.trim(), "chosen", rowId);
+      if (document.getElementById(tableId).getElementsByTagName("tr")[row].getElementsByTagName("td")[3].innerText.trim() == rowId)
+        {
+          if (document.getElementById(tableId).getElementsByTagName("tr")[row].getElementsByTagName("td")[4].innerText.trim()=="ROW")
+            {
+              if(document.getElementById(tableId).getElementsByTagName("tr")[row].style.display == "")
+                {document.getElementById(tableId).getElementsByTagName("tr")[row].style.display = "none"}
+                else
+                {document.getElementById(tableId).getElementsByTagName("tr")[row].style.display = ""}
+            }
+            
+        }
+    }
+}
+
 
 function act(tableId, action) {
   var rowCnt  =  document.getElementById(tableId).getElementsByTagName("tr").length;
