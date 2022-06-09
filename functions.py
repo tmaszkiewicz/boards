@@ -43,7 +43,14 @@ def create_LogInventory(name, inv_pk, package_pk,index_pk,scanner,userid,usernam
     logInventory.localisation_after = localisation_after
     logInventory.paczka_before = paczka_before
     logInventory.paczka_after = paczka_after
+
+    logInventory.package_barcode = logInventory.package.pk
+    logInventory.index_name = logInventory.index.name
+    logInventory.index_sap = logInventory.index.sap
+
+
     logInventory.save()
+    
     return("OK")
 
 

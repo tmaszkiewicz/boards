@@ -1,0 +1,95 @@
+{%extends "boards/base.html" %}
+{%block body%}
+<div class="container">
+    <div>
+        <form action="" method="POST">
+        {% csrf_token %} 
+        <label for="inventories">INWENTURA</label>
+        <select id="inventories" name="inventories">
+            {%for inventory in inventories%}
+            <option value={{inventory.name}}>{{inventory.name}}</option>
+
+            {%endfor %}
+          </select>
+          <label for="locs">LOKALIZACJA</label>
+          <select id="locs" name="locs">
+              {%for loc in locs%}
+              <option value={{loc}}>{{loc}}</option>
+  
+              {%endfor %}
+            </select>
+            <label for="full">WSZYSTKIE PACZKI?</label>
+            <input type="checkbox" name="full">
+  
+          <button type="submit" class="btn btn-primary">DALEJ</button>
+        </form>
+    </div>
+        
+</div>
+<div class="container">
+    <table id="tab" class="table table-bordered">
+        <thead>
+            <tr>
+                <th>
+                    {{labels.index_name}}
+                
+                </th>
+                <th>
+                
+                </th>
+                <th>
+                    ILOŚĆ PACZEK.
+                
+                </th>
+            </tr>
+
+        </thead>
+        <tbody>
+            {%for row in rows %}
+            {% if row.rowtype == "HEADER" %}
+            <tr style="background-color: rgb(200, 200, 200); color: black; font-size: normal;">                
+                <td class="col-10" colspan="2"> 
+                    {{row.index}}
+                    {{row.package}}
+                </td>
+                <td class="col-1">
+                    {{row.package_qty}}
+                    {{row.length_after}}
+
+
+                </td>
+                <td class="col-1"> 
+                    {% if row.package_length.length_after__sum != None %}
+                        {{row.package_length.length_after__sum|floatformat:1}}
+                    {% endif %}
+                </td>
+    
+            </tr>
+            {%else%}
+                {%if row.inventored == "T" %}
+                    <tr style="background-color: rgb(201, 226, 198); color: black; font-size: small;">
+                {%else%}
+                    <tr style="background-color: rgb(255, 255, 255); color: black; font-size: small;">
+                {%endif%}
+
+                <td class="col-2">
+                </td>
+                <td class="col-9" colspan="2"> 
+                    BARCODE: {{row.package}}
+                    <br>
+                    PACZKA: {{row.paczka_after}}
+
+                </td>
+                <td class="col-1">
+                    {{row.length_after}}
+
+                </td>
+
+            </tr>
+            {%endif%}
+
+            {%endfor%}
+        </tbody>
+    </table>
+</div>
+{%endblock body%}

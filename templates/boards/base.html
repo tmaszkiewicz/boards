@@ -40,8 +40,10 @@
                 <a class="dropdown-item" href="/boards/index_report2/">Indexy</a>
                 <a class="dropdown-item" href="/boards/suppliers_report/">Podsumowania dostawcami</a>
                 <a class="dropdown-item" href="/boards/packages_filter">Paczki</a>
-                <a class="dropdown-item" href="/boards/zuzycie/">Zużycie</a>
-                <a class="dropdown-item" href="/boards/zuzycie_log/">Zużycie transakcjami(TESTY!!!)</a>
+                <!--<a class="dropdown-item" href="/boards/zuzycie/">Zużycie</a>-->
+                <a class="dropdown-item" href="/boards/zuzycie_log/">Zużycie</a>
+                <a class="dropdown-item" href=# onclick="ExportToExcel1('xlsx')" >EXPORT XLSX</a>
+
 
                 <div class="dropdown-divider"></div>
               </div>
@@ -56,15 +58,16 @@
                 <div class="dropdown-divider"></div>
               </div>
             </li>
-            {% if user.get_username == "tmaszkiewicz" %}
+            {% if user.get_username == "sklawinski" or  user.get_username == "tmaszkiewicz" %}
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">INWENTURA</a>
               <div class="dropdown-menu">
 
                 <a class="dropdown-item" href="/boards/inventory_rep/">Raport inwentaryzacji</a>
                 <a class="dropdown-item" href="/boards/inventory_move/">Usuń niezinwentaryzowane</a>
-                <a class="dropdown-item" href="/boards/inventory_move/">Dodaj inwenturę archiwalną</a>
-                <a class="dropdown-item" href="/boards/inventory_move/">Archiwizuj inwenturę</a>
+                <a class="dropdown-item" href="/boards/add_inv_arch/">Dodaj inwenturę archiwalną</a>
+                <a class="dropdown-item" href="/boards/inventory_arch/">Archiwizuj inwenturę</a>
+                <a class="dropdown-item" href="/boards/inventory_retrieve/">Przywracanie</a>
 
 
 
@@ -258,10 +261,54 @@ function ExportToExcel(tableId, type, fn, dl) {
             var elt = document.getElementById(tableId);
             var wb = XLSX.utils.table_to_book(elt, { sheet: "sheet1" });
 
+
+            //MOZE da się na tym etapie odfiltrować ukryte kolumny?
+
+
             return dl ?
                 XLSX.write(wb, { bookType: type, bookSST: true, type: 'base64' }) :
                 XLSX.writeFile(wb, fn || ('MySheetName.' + (type || 'xlsx')));
         }
+
+function ExportToExcel1(tableId, type, fn, dl) {
+
+    var ws = XLSX.WorkSheet=XLSX.utils.table_to_sheet(document.getElementsByTagName('table')[0]);
+    var wb = XLSX.WorkBook = XLSX.utils.book_new();
+    ws['!cols'] = [];
+    var tab = document.getElementsByTagName('table')[0];
+    for (var i = 0, row; row = tab.rows[i]; i++) {
+       for (var j = 0, col; col = row.cells[j]; j++) {
+        if(tab.rows[i].style.display != "none" && tab.rows[i].cells[j].style.display=="none")
+          {
+              ws['!cols'][j] = { hidden: true };
+
+          }
+
+       }
+    }  
+
+
+
+    //alert(ws['!cols'][1].hidden);
+    
+
+    /*for (var row in ws) {
+      alert(ws[row]);
+      for (var col in row){
+        alert(ws[row][col]);
+      console.log(ws[row][col]);
+      }
+    }*/
+
+    XLSX.utils.book_append_sheet(wb, ws, 'DANE');
+    return dl ?
+                XLSX.write(wb, { bookType: type, bookSST: true, type: 'base64' }) :
+                XLSX.writeFile(wb, fn || ('MySheetName.' + (type || 'xlsx')));
+
+
+    //XLSX.writeFile(wb, 'myproject.xls');
+        }
+
 
 </script>
 </html>

@@ -1,0 +1,89 @@
+{% extends "boards/base.html"%}
+{% block body %}
+<div class="container">
+    <div class="row" align="center">
+        <div class="col-12">
+            <br>
+            <h2>
+                USUWANIE NIEZINWANTARYZOWANYCH PACZEK 
+
+                <br>
+            </h2>
+            <h3 style="color:red;">
+
+                <br>
+
+                WYKONUJ TYLKO PO PRZEPROWADZONEJ I ZWERYFIKOWANEJ INWENTURZE!!!
+                <br>
+            </h3>
+    </div>
+    </div>
+    <div class="row" align="center">
+        <div class="col-12">
+        <form method="POST">
+            {% csrf_token %}
+
+            <label for="locs">LOKALIZACJA</label>
+            <select id="locs" name="locs" size="3" style="width:200;">
+                {%for loc in locs%}
+                <option value={{loc}}>{{loc}}</option>
+                {%endfor %}
+              </select>
+              <input type="text" hidden name="postnr" value="1">
+
+              <br>
+            <button type="submit" class="btn btn-primary">WYLISTUJ PACZKI DO USUNIĘCIA</button>
+
+        
+        </form>
+        <br>
+        <br>
+        <h2 style="color:red;">{{alert}}</h2>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+    
+    
+            <table class="table table-bordered">
+                <thead align="center">
+                    <tr>
+                        <th >
+                            PACZKI ZOSTANĄ USUNIĘTE (ILOŚĆ: {{packagesToBeDeletedCnt}})
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="text" hidden name="postnr" value="2">
+                    {%for packageToBeDeleted in packagesToBeDeleted %}
+                    <tr>
+                        <td align="center">
+                        {{packageToBeDeleted.pk}}
+                        {{packageToBeDeleted.index}}
+                        {{packageToBeDeleted.length}}
+
+                        </td>
+                        <td>
+                            <input type="checkbox" checked name="{{packageToBeDeleted.pk}}">
+                        </td>
+                        </tr>
+                    {%endfor%}
+                    <tr>
+                        <td align="center" colspan="1">
+                            <button type="submit" class="btn btn-primary">USUŃ</button>
+                        <td>
+                    </tr>
+                    {% endblock body %}
+
+
+
+                    </form>
+                <tbody>
+
+            </table>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,71 @@
+{% extends "boards/base.html"%}
+{% block body %}
+<div class="container">
+    <div class="row" align="center">
+        <div class="col-12">
+            <br>
+            <h2>
+                ARCHIWIZUJ OSTATNIĄ INWENTURĘ (INWENTURA)
+
+                <br>
+                do wybranego archiwum
+            </h2>
+            <br>
+            <br>
+    </div>
+    </div>
+    <div class="row" align="center">
+        <div class="col-12">
+        <form method="POST">
+            {% csrf_token %}
+
+            <label for="inventories">INWENTURA ARCHIWUM</label>
+            <select id="inventories" name="inventories">
+                {%for inventory in inventories%}
+                <option value={{inventory.name}}>{{inventory.name}}</option>
+    
+                {%endfor %}
+              </select>
+    
+
+
+
+            <button type="submit" class="btn btn-warning">ARCHIWIZUJ! OPERACJA NIEODWRACALNA!</button>
+
+        
+        </form>
+        <br>
+        <br>
+        <h2 style="color:red;">{{alert}}</h2>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+    
+    
+            <table class="table table-bordered">
+                <thead align="center">
+                    <tr>
+                        <th >
+                            ZARCHWIZOWANO INWENTURY DLA PONIŻSZYCH PACZEK: 
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    {%for logInventory in logInventories %}
+                    <tr>
+                        <td align="center">
+                        {{logInventory}}
+                        </td>
+
+                        </tr>
+                    {%endfor%}
+                    {% endblock body %}
+                <tbody>
+
+            </table>
+        </div>
+    </div>
+
+</div>

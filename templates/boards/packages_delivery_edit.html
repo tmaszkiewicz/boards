@@ -58,8 +58,14 @@
             {{package.localisation}}
         </td>
         <td class="col-2" align="left">
-            {{package.length}} m
+            {%if package.length_initial_prd == 0%}
+            {{package.length}} m 
+            {%else%}
+            {{package.length_initial_prd}} m
+            {%endif%}
+
         </td>
+
         <td class="col-2" align="left">
             {{package.wz}}
         </td>

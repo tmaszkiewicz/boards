@@ -1,0 +1,10 @@
+{% extends "boards/base.html" %}
+{% block body %}
+<form method="POST">
+    {% csrf_token %}
+    {{form}}
+
+    {{deletedPackage}}
+<input type="submit"></unput>
+</form>
+{% endblock body %}

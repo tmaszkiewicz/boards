@@ -1,0 +1,60 @@
+{% extends "boards/base.html"%}
+{%block body%}
+<div class = "container">
+    <form method="post" name="data" action="">          
+        {% csrf_token %}
+        <div class="row">
+            <div  class="col-3">
+                <label for="data_od">OD:</label>
+                <input type="date" id="data_od" name="data_od">
+            </div>
+            <div  class="col-3">
+                <label for="data_do">DO:</label>
+                <input type="date" id="data_do" name="data_do">
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col">
+                <input type="submit">
+            </div>
+        </div>
+
+    </form>
+    <table class="table table-bordered">        
+        <thead>
+            <tr>
+                <th>
+                    DATA: {{data|date:"Y-m-d"}}
+                <th>
+            </tr>            
+            <tr>
+                <th>
+                    {{labels.index_name}}
+                </th>
+                <th>
+                    {{labels.package_length}}
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for dayQuantity in dayQuantities %}
+        <tr>
+            <td class="col=8">
+            {{dayQuantity.index}}
+            </td>
+            <td class="col=4">
+
+
+        {{dayQuantity.utilisation4day|floatformat:1}}
+        {{dayQuantity.update_length}}
+        {{dayQuantity.close_package}}
+        </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{%endblock body%}
+
+

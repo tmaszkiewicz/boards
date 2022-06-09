@@ -11,9 +11,22 @@ from django.http import HttpResponse
 
 # Create your models here.
 
+
+
+
+
+class deletions(models.Model):
+    package = models.IntegerField(blank=False,null=False)
+    deletion_date = models.DateTimeField(auto_now_add=True)
+    package_deleted_as_first = models.IntegerField(blank=False,null=False)
+    def __str__(self):
+        return f"{str(self.pk)}  {str(self.deletion_date)}  {str(self.package_deleted_as_first)}"
+
 class inventory(models.Model):
-    name = models.CharField(max_length=100,blank=False,null=False)
+    name = models.CharField(max_length=100,blank=False,null=False,unique=True)
     inventory_date = models.DateField(default=date.today)
+    def __str__(self):
+        return f"{self.name}  {str(self.inventory_date)}"
 
 
 class Supplier(models.Model):    
@@ -183,6 +196,13 @@ class Package(models.Model):
 
     def __str__(self):
         return "{} {} {}".format(self.pk, self.index.name, self.length_on_close) 
+
+class InvetoriedRestore(models.Model):
+   package = models.ForeignKey(Package, on_delete=models.CASCADE, null=False)
+   inventory = models.ForeignKey(inventory, on_delete=models.CASCADE, null=False)
+   def __str__(self):
+       return f"{self.package}  {str(self.inventory)}"
+
 class PackageTrash(models.Model):
     paczka = models.CharField(max_length=10,blank=True,null=True,default="")
     index = models.ForeignKey(Index,on_delete=models.CASCADE,null=False)
@@ -281,7 +301,15 @@ class LogInventory(models.Model):
     localisation_after =  models.CharField(max_length=15,blank=True,null=True)
     paczka_before = models.CharField(max_length=10,blank=True,null=True,default="")
     paczka_after = models.CharField(max_length=10,blank=True,null=True,default="")
-
+    package_barcode = models.CharField(max_length=12,null=True,blank=True)
+    index_name = models.CharField(max_length=100,blank=True,null=True)
+    index_sap = models.CharField(max_length=20,blank=True,null=True)
+    #def set_values(self):
+    #    self.package_barcode = self.package.pk
+    #    self.index_name = self.index.name
+    #    self.index_sap = self.index.sap
+    #    #self.save()
+    #    return "OK"
 
     def __str__(self):
         return f"{self.inventory_name}"

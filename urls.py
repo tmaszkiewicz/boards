@@ -18,6 +18,7 @@ from django.contrib import admin
 from .models import Package
 #from django.conf.urls import url
 from django.urls import path,include,re_path
+from django.views.generic import TemplateView
 from rest_framework import routers, serializers, viewsets
 from . import views
 
@@ -66,7 +67,10 @@ urlpatterns = [
     path('zuzycie/',views.zuzycie,name='zuzycie'),
     path('zuzycie_log/',views.zuzycie_log,name='zuzycie_log'),
     path('inventory_rep/',views.inventory_rep,name='inventory_rep'),
-
+    path('add_inv_arch/',views.add_inv_arch,name='add_inv_arch'),
+    path('inventory_arch/',views.inventory_arch,name='inventory_arch'),
+    path('inventory_move/',views.inventory_move,name='inventory_move'),
+    path('inventory_retrieve/', views.inventory_retrieve.as_view()),
     path('scanner/load3/read_package/<str:pk>', views.scanner_load3_read_package,name='scanner_load3_read_package'),
     path('scanner/load3/warehouse_package/<str:pk>/<str:length>', views.scanner_load3_warehouse_package,name='scanner_load3_warehouse_package'),
     path('scanner/load3/prd_package/<str:pk>/<str:length>', views.scanner_load3_prd_package,name='scanner_load3_prd_package'),

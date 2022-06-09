@@ -1,4 +1,6 @@
 from ast import Index
+from asyncio.locks import _ContextManagerMixin
+from logging import exception
 from math import lgamma
 from pdb import post_mortem
 import re
@@ -8,22 +10,24 @@ from time import sleep
 from urllib import request, response
 from urllib.error import HTTPError
 from venv import create
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.views.decorators.csrf import csrf_exempt
 from  datetime import date, timedelta
+from django.views.generic import TemplateView
 from django.db.models import Sum
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets
 import datetime
+from django.views.generic.base import ContextMixin
 
 
-from .models import IndexForm, Index, Supplier, PackageForm, Package, LogInventory,inventory
-from .models import IndexForm, SupplierForm, CurrentUser, Log, DayQuantity, DeletedPackage
+from .models import IndexForm, Index, Supplier, PackageForm, Package, LogInventory, inventory,deletions
+from .models import IndexForm, SupplierForm, CurrentUser, Log, DayQuantity, DeletedPackage, InvetoriedRestore
 from .functions import create_log, update_utilisation, remove_slash, return_slash, create_LogInventory
 from .serializers import IndexSerializer, SupplierSerializer, PackageSerializer
-from .forms import LoginForm
+from .forms import LoginForm, RetrievePackageForm
 
 
 # Create your views here.
@@ -37,6 +41,7 @@ LABELS = {
     'package_paczka':'PACZKA',
     'package_delivery_date':'DATA DOSTAWY',
     'package_localisation':'LOKALIZACJA',
+    'package_deviation' : "BRAKI",
     'package_length':'DŁUGOŚĆ',
     'package_wz':'WZ',
     'log_package':'ID PACZKI',
@@ -52,6 +57,186 @@ LABELS = {
 
 
 }
+
+LOCS = ("WSZYSTKIE","MAG","PRD")
+
+class inventory_retrieve(TemplateView):
+    form_class = RetrievePackageForm
+    template_name = 'boards/inventory_retrieve.html'
+    deletedPackage= ""
+    package = Package()
+    def get_context_data(self, **kwargs):
+        context = super(inventory_retrieve, self).get_context_data(**kwargs)
+        context['form'] = self.form_class()
+        context['deletedPackage'] = self.deletedPackage
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            package_id = form.cleaned_data['package_id']
+            print(package_id)
+
+            self.deletedPackage = get_object_or_404(DeletedPackage, pk=package_id)
+            self.package.pk = self.deletedPackage.pk
+            self.package.id = self.deletedPackage.id
+            self.package.paczka = self.deletedPackage.paczka
+            self.package.index = self.deletedPackage.index
+            self.package.delivery_date = self.deletedPackage.delivery_date
+            self.package.delivery_time = self.deletedPackage.delivery_time
+            self.package.supplier = self.deletedPackage.supplier
+            self.package.werk = self.deletedPackage.werk
+            self.package.localisation = self.deletedPackage.localisation
+            self.package.length_on_close =  self.deletedPackage.length_on_close
+            self.package.length =  self.deletedPackage.length
+            self.package.length_correction = self.deletedPackage.length_correction
+            self.package.length_initial_prd = self.deletedPackage.length_initial_prd
+            self.package.wz = self.deletedPackage.wz
+            self.package.inventoried = False #self.deletedPackage.inventoried
+            self.package.save()
+            DeletedPackage.objects.get(pk=self.deletedPackage.pk).delete()
+
+            #for i in self.deletedPackage._meta.get_fields():
+            #    self = self.
+            #    print(i)            
+
+
+            #Package.objects.get(pk=package_id)
+
+            return render(request, self.template_name, self.get_context_data(**kwargs))
+        else:
+            print(self.form.is_valid())
+            return HttpResponse("BLAD")
+
+#    
+    #def get(self, request, *args,  **kwargs):
+    #    context['form'] = self.form_class(None)
+
+
+
+@login_required(login_url='/boards/loginlocal/')      
+def inventory_arch(request, *args, **kwargs):
+    url='boards/inventory_arch.html'
+    #def get(self, request)
+    #    return 
+
+    inventories = inventory.objects.all().order_by('-inventory_date')
+    context = {
+        'inventories' : inventories,
+    }
+
+    if request.method == 'POST':
+        inventory_arch = inventory.objects.filter(name=request.POST['inventories']).first()
+        logInventories = LogInventory.objects.filter(inventory_name="INWENTURA")
+        for logInventory in logInventories:
+            logInventory.inventory_name=inventory_arch.name
+            logInventory.inventory=inventory_arch
+            logInventory.save()
+        for package in Package.objects.filter(inventoried=True): #.exclude(localisation="DOST").exclude(localisation="CLOSED"):  ## Chyb jednak zdejmujemy wszystkie inventoried! też te CLOSED
+
+            package.inventoried = False
+            package.save()
+            invetoriedRestore = InvetoriedRestore()
+            invetoriedRestore.package=package
+            invetoriedRestore.inventory = inventory_arch
+            invetoriedRestore.save()
+        context['logInventories'] = logInventories
+
+
+
+
+        
+
+    return render(request,url,context)
+
+@login_required(login_url='/boards/loginlocal/')      
+def inventory_move(request, *args, **kwargs):
+    url='boards/inventory_move.html'
+    alert = ""
+    context = {
+    }
+    print(request.POST)
+    if request.method == 'POST' and request.POST['postnr']=="1":
+        try:
+            print(request.POST)
+            if request.POST['locs']!="WSZYSTKIE":
+                packagesToBeDeleted = Package.objects.filter(inventoried=False,localisation=request.POST['locs'])
+                packagesToBeDeletedCnt = Package.objects.filter(inventoried=False,localisation=request.POST['locs']).count()
+            else:
+                packagesToBeDeleted = Package.objects.filter(inventoried=False).exclude(localisation="DOST").exclude(localisation="CLOSED")
+                packagesToBeDeletedCnt = Package.objects.filter(inventoried=False).exclude(localisation="DOST").exclude(localisation="CLOSED").count()
+
+            context['packagesToBeDeleted'] = packagesToBeDeleted
+            context['packagesToBeDeletedCnt'] = packagesToBeDeletedCnt
+        except  Exception as e:
+            alert = f"Wybierz lokalizację!!! - błąd {e}"
+    elif request.method == 'POST' and request.POST['postnr']=="2":
+        keys = filter(lambda x:x[0].isdigit(),request.POST.keys())
+        keys_tmp = filter(lambda x:x[0].isdigit(),request.POST.keys())
+        package_deleted_as_first = list(keys_tmp)[0]
+        for pk in keys:
+
+            deletions.objects.create(package=int(pk), package_deleted_as_first=int(package_deleted_as_first))
+            try:
+                if DeletedPackage.objects.get(pk=pk):
+                    DeletedPackage.objects.get(pk=pk).delete()
+            except:
+                pass
+            DeletedPackage.objects.create(
+                                        pk=pk,
+                                        paczka=Package.objects.get(pk=pk).paczka,
+                                        index=Package.objects.get(pk=pk).index,
+                                        delivery_date=Package.objects.get(pk=pk).delivery_date,
+                                        delivery_time=Package.objects.get(pk=pk).delivery_time,
+                                        supplier=Package.objects.get(pk=pk).supplier,
+                                        werk=Package.objects.get(pk=pk).werk,
+                                        localisation=Package.objects.get(pk=pk).localisation,
+                                        length=Package.objects.get(pk=pk).length,
+                                        length_correction=Package.objects.get(pk=pk).length_correction,
+                                        length_on_close=Package.objects.get(pk=pk).length_on_close,
+                                        length_initial_prd=Package.objects.get(pk=pk).length_initial_prd,
+                                        wz=Package.objects.get(pk=pk).wz,
+                                        inventoried=False)
+            #Package.objects.get(pk=pk).delete() ### ODBLOKUJ!!!ODBLOKUJ!!!ODBLOKUJ!!!ODBLOKUJ!!!ODBLOKUJ!!!
+
+
+
+    context['locs']=LOCS
+    context['alert'] = alert
+    return render(request,url,context)
+
+
+@login_required(login_url='/boards/loginlocal/')      
+def add_inv_arch(request, *args, **kwargs):
+    url = 'boards/add_inv_arch.html'
+    inv_list = inventory.objects.all().order_by('inventory_date')
+    i=0
+    recommended_name = "INWENTURA_{}_MAG".format(datetime.date.today())
+    while True:
+        i+=1
+        if not inventory.objects.filter(name=recommended_name):
+            break
+        else:
+            recommended_name = recommended_name[:-1]+str(i)
+
+    recommended_date = "{}".format(datetime.date.today().strftime("%Y-%m-%d"))
+    context = {
+        'inv_list': inv_list,
+        'recommended_name' : recommended_name,
+        'recommended_date' : recommended_date,
+        
+    }
+    if request.method == "POST":
+        try:
+            inventory.objects.create(name=request.POST['inwentura'],inventory_date=request.POST['data_inv_arch'])
+            return HttpResponseRedirect("/boards/add_inv_arch/")
+        except:
+            context['alert'] = "PRÓBA UTWORZENIA DUPLIKATU!!!"
+        
+
+    
+    return render(request,url, context)
+@login_required(login_url='/boards/loginlocal/')      
 def zuzycie(request, *args, **kwargs):
     url='boards/zuzycie.html'
     context = {}
@@ -91,6 +276,7 @@ def zuzycie(request, *args, **kwargs):
 
     return render(request,url,context)
 
+@login_required(login_url='/boards/loginlocal/')      
 def zuzycie_log(request, *args, **kwargs):
     url='boards/zuzycie_log.html'
     context = {}
@@ -103,15 +289,15 @@ def zuzycie_log(request, *args, **kwargs):
     rowid=0
     if request.method == "POST":
         data_od = request.POST['data_od']
-        data_do = request.POST['data_do']
-        data_do_ = datetime.datetime.strptime(data_do, '%Y-%m-%d')+timedelta(days = 1)
+        data_do_ = request.POST['data_do']
+        #data_do_ = datetime.datetime.strptime(data_do, '%Y-%m-%d')+timedelta(days = 1)
         print(data_do_)
         
         for index in indexes:
             rowid +=1
             dq = {}
 
-            log = Log.objects.filter(index_before=index, localisation_before="PRD",time__gte=data_od,time__lte=data_do_).exclude(localisation_after="MAG").exclude(localisation_after="DOST")
+            log = Log.objects.filter(index_before=index, localisation_before="PRD",time__gte=data_od,time__lte=data_do_).exclude(localisation_after="DOST") # 17.05.2022 exclude(localisation_after="MAG").
             sum_length_before = log.aggregate(Sum('length_before'))['length_before__sum'] if log.aggregate(Sum('length_before'))['length_before__sum'] != None else 0
             sum_length_after = log.aggregate(Sum('length_after'))['length_after__sum'] if log.aggregate(Sum('length_after'))['length_after__sum'] != None else 0
 
@@ -146,6 +332,8 @@ def zuzycie_log(request, *args, **kwargs):
 
                 dq['rowtype'] = "ROW"
                 dq['package_pk'] = package.pk
+                dq['package_paczka'] = package.paczka
+
                 dq['package_name'] = package.paczka
                 dq['package_length'] = package.length
                 dq['index'] = index
@@ -166,7 +354,7 @@ def zuzycie_log(request, *args, **kwargs):
             rowid +=1            
             print(current_date)
             dq = {}
-            log = Log.objects.filter(index_before=index, localisation_before="PRD",time__gte=current_date).exclude(localisation_after="MAG").exclude(localisation_after="DOST")
+            log = Log.objects.filter(index_before=index, localisation_before="PRD",time__gte=current_date).exclude(localisation_after="DOST") # 17.05.2022 exclude(localisation_after="MAG").
             sum_length_before = log.aggregate(Sum('length_before'))['length_before__sum'] if log.aggregate(Sum('length_before'))['length_before__sum'] != None else 0
             sum_length_after = log.aggregate(Sum('length_after'))['length_after__sum'] if log.aggregate(Sum('length_after'))['length_after__sum'] != None else 0
 
@@ -216,7 +404,7 @@ def zuzycie_log(request, *args, **kwargs):
 
     return render(request,url,context)
 
-
+@login_required(login_url='/boards/loginlocal/')      
 def stany_magazyn(request, *args, **kwargs):
     url='boards/stany_magazyn.html'
     indexes = Index.objects.all()
@@ -233,6 +421,8 @@ def stany_magazyn(request, *args, **kwargs):
     context['stany'] = stany
 
     return render(request,url,context)
+
+@login_required(login_url='/boards/loginlocal/')          
 def stany_produkcja(request, *args, **kwargs):
     url='boards/stany_produkcja.html'
     indexes = Index.objects.all()
@@ -250,6 +440,7 @@ def stany_produkcja(request, *args, **kwargs):
 
     return render(request,url,context)
 
+@login_required(login_url='/boards/loginlocal/')      
 def stany_lacznie(request, *args, **kwargs):
     url='boards/stany_lacznie.html'
     indexes = Index.objects.all()
@@ -270,8 +461,7 @@ def stany_lacznie(request, *args, **kwargs):
     return render(request,url,context)
 
 
-
-
+@login_required(login_url='/boards/loginlocal/')      
 def packages_history(request, *args, **kwargs):
     url = 'boards/packages_history.html'
     context  = {
@@ -513,12 +703,10 @@ def packages_delivery_edit(request, *args, **kwargs):
 def packages_edit(request, *args, **kwargs):
     #wz = wz.replace("\\","QQQQ")
     #wz = wz.replace("/","qqqq")
-
     url = 'boards/packages_edit.html'
     context = {}
     pk = kwargs['pk']
     print(request.path_info)
-
     package = Package.objects.get(pk=pk)
     packageForm = PackageForm()
     packageForm.fields['delivery_date'].initial = package.delivery_date.isoformat()
@@ -529,6 +717,7 @@ def packages_edit(request, *args, **kwargs):
     packageForm.fields['wz'].initial = package.wz
     
     if request.method == 'POST':
+        create_log(3,"", package.length,request.POST['length'], package.localisation, package.localisation, package.delivery_date, request.POST['delivery_date'] , request.user, "PC",request.POST['index'],package.pk,request.POST['supplier'],package.paczka,package.paczka,package.length_correction,package.length_correction)
         print(package,request.POST)
         package.delivery_date=request.POST['delivery_date']
         if request.POST['supplier']!="":
@@ -555,7 +744,26 @@ def packages_del(request,*args,**kwargs):
     pk = kwargs['pk']
     print(request)
     #### PackageThrash - NIe tworzy się - UTWORZYC NOWY MODEL POD THRASH
-    DeletedPackage.objects.create(pk=pk,index=Package.objects.get(pk=pk).index,supplier=Package.objects.get(pk=pk).supplier,delivery_date=Package.objects.get(pk=pk).delivery_date,length=Package.objects.get(pk=pk).length,localisation=Package.objects.get(pk=pk).localisation,wz=Package.objects.get(pk=pk).wz,length_initial_prd=Package.objects.get(pk=pk).length_initial_prd)
+    #DeletedPackage.objects.create(pk=pk,index=Package.objects.get(pk=pk).index,supplier=Package.objects.get(pk=pk).supplier,delivery_date=Package.objects.get(pk=pk).delivery_date,length=Package.objects.get(pk=pk).length,localisation=Package.objects.get(pk=pk).localisation,wz=Package.objects.get(pk=pk).wz,length_initial_prd=Package.objects.get(pk=pk).length_initial_prd)
+    DeletedPackage.objects.create(
+                                    pk=pk,
+                                    paczka=Package.objects.get(pk=pk).paczka,
+                                    index=Package.objects.get(pk=pk).index,
+                                    delivery_date=Package.objects.get(pk=pk).delivery_date,
+                                    delivery_time=Package.objects.get(pk=pk).delivery_time,
+                                    supplier=Package.objects.get(pk=pk).supplier,
+                                    werk=Package.objects.get(pk=pk).werk,
+                                    localisation=Package.objects.get(pk=pk).localisation,
+                                    length=Package.objects.get(pk=pk).length,
+                                    length_correction=Package.objects.get(pk=pk).length_correction,
+                                    length_on_close=Package.objects.get(pk=pk).length_on_close,
+                                    length_initial_prd=Package.objects.get(pk=pk).length_initial_prd,
+                                    wz=Package.objects.get(pk=pk).wz,
+                                    inventoried=False)
+
+
+
+    
     Package.objects.get(pk=pk).delete()
 
     return HttpResponseRedirect("/boards/packages/")
@@ -563,7 +771,24 @@ def packages_del_delivery(request,*args,**kwargs):
     pk = kwargs['pk']
     print(request)
     #### PackageThrash - NIe tworzy się
-    DeletedPackage.objects.create(pk=pk,index=Package.objects.get(pk=pk).index,supplier=Package.objects.get(pk=pk).supplier,delivery_date=Package.objects.get(pk=pk).delivery_date,length=Package.objects.get(pk=pk).length,localisation=Package.objects.get(pk=pk).localisation,wz=Package.objects.get(pk=pk).wz,length_initial_prd=Package.objects.get(pk=pk).length_initial_prd)
+    #DeletedPackage.objects.create(pk=pk,index=Package.objects.get(pk=pk).index,supplier=Package.objects.get(pk=pk).supplier,delivery_date=Package.objects.get(pk=pk).delivery_date,length=Package.objects.get(pk=pk).length,localisation=Package.objects.get(pk=pk).localisation,wz=Package.objects.get(pk=pk).wz,length_initial_prd=Package.objects.get(pk=pk).length_initial_prd)
+    DeletedPackage.objects.create(
+                                    pk=pk,
+                                    paczka=Package.objects.get(pk=pk).paczka,
+                                    index=Package.objects.get(pk=pk).index,
+                                    delivery_date=Package.objects.get(pk=pk).delivery_date,
+                                    delivery_time=Package.objects.get(pk=pk).delivery_time,
+                                    supplier=Package.objects.get(pk=pk).supplier,
+                                    werk=Package.objects.get(pk=pk).werk,
+                                    localisation=Package.objects.get(pk=pk).localisation,
+                                    length=Package.objects.get(pk=pk).length,
+                                    length_correction=Package.objects.get(pk=pk).length_correction,
+                                    length_on_close=Package.objects.get(pk=pk).length_on_close,
+                                    length_initial_prd=Package.objects.get(pk=pk).length_initial_prd,
+                                    wz=Package.objects.get(pk=pk).wz,
+                                    inventoried=False)
+
+
     wz = Package.objects.get(pk=pk).wz
     wz = remove_slash(wz)
     Package.objects.get(pk=pk).delete() ### - ODBLOKUJ!!!!
@@ -950,6 +1175,30 @@ def scanner_load(request):
         #except: 
         #    return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
 
+    if typ == "rewarehouse_package":
+        #try:
+        package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
+        if float(request.POST['length']) <= package.length_initial_prd:
+
+            supplier_pk = package.supplier.pk if package.supplier!=None else "0"
+            create_log(0,"", package.length,request.POST['length'], package.localisation, "MAG", package.delivery_date, package.delivery_date, username, scanner,package.index.pk,package.pk,supplier_pk,package.paczka,request.POST['paczka'],package.length_correction,package.length_correction)            
+            print(package.length,request.POST['length'])
+            update_utilisation(typ, package.length,request.POST['length'], package.index.pk)
+            
+            
+
+            package.localisation = "MAG"
+            package.length = request.POST['length']
+            package.paczka = request.POST['paczka']
+            package.save()
+            sap_str =(f"Paczka {request.POST['package']} wprowadzona na magazyn")
+        else:
+            return HttpResponse(f"ZA DŁUGA!!!! NIE ZAMKNIĘTO!!! ZAMKNIJ PONOWNIE!!!!")
+
+
+        #except: 
+        #    return HttpResponse(f"Obiekt {request.POST['package']} nie istnieje")
+
     if typ == "warehouse_package_update":
         try:
             package = Package.objects.get(pk=request.POST['package'].lstrip("0"))
@@ -1223,7 +1472,7 @@ def inventory_rep(request, *args, **kwargs):
     inventories = inventory.objects.all()
     if request.method == 'POST':
         if request.POST['locs'] == "WSZYSTKIE":
-            print("LOL",request.POST['inventories'])
+            #print("LOL",request.POST['inventories'])
             logInventories = LogInventory.objects.filter(inventory_name=request.POST['inventories']).exclude(localisation_after="DOST").exclude(localisation_after="CLOSED")
         elif request.POST['locs'] == "MAG":
             logInventories = LogInventory.objects.filter(inventory_name=request.POST['inventories'],localisation_after="MAG")
@@ -1238,17 +1487,49 @@ def inventory_rep(request, *args, **kwargs):
         row['index']  = index
         row['package_qty'] = logInventories.filter(index=index).count()
         row['package_length'] = logInventories.filter(index=index).aggregate(Sum('length_after'))
+        row['rowtype'] = "HEADER"
         rows.append(row)
-        for package in logInventories.filter(index=index):
-            row = {}
-            row['package'] =  package.package
-            row['length_after'] =  package.length_after
-            rows.append(row)
+        ##W zależnosci od checka w formularzu wyrzucaj tylko zinwentaryzowane lub wszystkie i koloruj zinwentaryzowane
+        if "full" not in request.POST.keys():
+            for package in logInventories.filter(index=index):
+                row = {}
+                #row['package'] =  package.package
+                #print(len(str(package.package_barcode)))
+                row['package'] = (12-len(str(package.package_barcode)))*"0" + package.package_barcode
+                row['length_after'] =  package.length_after
+                row['paczka_after'] =  package.paczka_after
+                row['rowtype']="ROW"
+                rows.append(row)
+        else:
+            if request.POST['locs'] == "WSZYSTKIE":
+               packages = Package.objects.filter(index=index).exclude(localisation="DOST").exclude(localisation="CLOSED")
+            else:
+               packages = Package.objects.filter(index=index, localisation=request.POST['locs']).exclude(localisation="DOST").exclude(localisation="CLOSED")
+
+            
+            #for package in Package.objects.filter(index=index).exclude(localisation="DOST").exclude(localisation="CLOSED"):
+            for package in packages:
+                row = {}
+                #row['package'] =  package.package
+                #print(len(str(package.pk)))
+                row['package'] = (12-len(str(package.pk)))*"0" + str(package.pk)
+                row['length_after'] =  package.length
+                row['paczka_after'] =  package.paczka
+                row['rowtype']="ROW"
+                if logInventories.filter(package_barcode=package.pk).count()>0:
+                    row['inventored']="T"
+                else:
+                    row['inventored']="N"
+
+                
+                rows.append(row)
+
 
 
     locs = ("WSZYSTKIE","MAG","PRD")
-    context['locs'] = locs
+    context['locs'] = LOCS
     context['rows'] = rows
+    context['labels'] =LABELS
     context['inventories'] = inventories
     context['logInventories']=logInventories
     return render(request,url,context)

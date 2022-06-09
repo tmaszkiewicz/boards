@@ -1,0 +1,105 @@
+{% extends "boards/base.html"%}
+{%block body%}
+<div class = "container">
+    <form method="post" name="data" action="">          
+        {% csrf_token %}
+        <div class="row">
+            <div  class="col-3">
+                <label for="data_od">OD:</label>
+                <input type="datetime-local" id="data_od" name="data_od">
+            </div>
+            <div  class="col-3">
+                <label for="data_do">DO:</label>
+                <input type="datetime-local" id="data_do" name="data_do">
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col">
+                <input type="submit">
+            </div>
+        </div>
+
+    </form>
+    <table id="rep" class="table table-bordered">        
+        <thead>
+            <tr>
+                <th colspan="2">
+                    DATA: {{data|date:"Y-m-d"}}
+                <th>
+            </tr>            
+            <tr>
+                <th>
+                    {{labels.index_name}}
+                </th>
+                <th>
+                    {{labels.package_length}}
+                </th>
+                <th>
+                    {{labels.package_deviation}}
+                </th>
+
+            </tr>
+        </thead>
+        <tbody>
+        {% for dayQuantity in dayQuantities %}
+        {%if dayQuantity.rowtype == "HEADER" %}
+
+        <tr>
+            <td class="col=8">
+                {% if dayQuantity.packages_cnt > 0  %}
+                <i id="{{dayQuantity.rowid}}" onclick="expand_zuzycia('rep','{{dayQuantity.rowid}}')" class="bi bi-file-plus"></i>
+                {% endif %}
+                {{dayQuantity.index}}
+            </td>
+            <td class="col=4">
+                {{dayQuantity.utilisation4day|floatformat:1}}
+            </td>
+            <td class="col=4">
+                {{dayQuantity.sum_length_correction|floatformat:1}}
+            </td>
+            <td class="col=2" style="display:none;">
+                {{dayQuantity.rowid}}
+            </td>
+            <td class="col=2" style="display:none;">
+                {{dayQuantity.rowtype}}
+            </td>
+            <td class="col=2" style="display:none;">
+                {{dayQuantity.packages_cnt}}
+            </td>
+
+        </tr>
+        {%else%}
+        <tr style="display: none;">
+            <td class="col=8">
+                ID: {{dayQuantity.package_pk}} / Paczka:
+                {{dayQuantity.package_paczka}}
+                {{dayQuantity.package.index}}
+            </td>
+            <td class="col=2">
+                {{dayQuantity.utilisation4dayP|floatformat:1}}
+            </td>
+            <td class="col=2">
+                {{dayQuantity.package_length_correction|floatformat:1}}
+            </td>
+            <td class="col=2" style="display:none;">
+                {{dayQuantity.rowid}}
+            </td>
+            <td class="col=2" style="display:none;">
+                {{dayQuantity.rowtype}}
+            </td>
+            <td class="col=2" style="display:none;">
+                {{dayQuantity.packages_cnt}}
+            </td>
+
+        </tr>
+
+        {%endif%}
+        {% endfor %}
+
+    </tbody>
+</table>
+</div>
+{%endblock body%}
+
+
